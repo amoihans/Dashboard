@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { LayoutGrid, Trash2, Eye, Save, Send } from 'lucide-react';
 import GridLayout from 'react-grid-layout';
@@ -10,6 +10,7 @@ import { useDashboardStore } from '../stores/dashboardStore';
 import { ChartRenderer } from '../components/charts';
 import { ComponentPalette } from '../components/edit/ComponentPalette';
 import { PropertyPanel } from '../components/edit/PropertyPanel';
+import type { ComponentConfig, LayoutItem } from '../types';
 import './DashboardEdit.css';
 
 const COLS = 24;
@@ -19,6 +20,11 @@ export function DashboardEdit() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const isNew = !id || id === 'new';
+  const canvasRef = useRef<HTMLDivElement>(null);
+
+  // 拖拽状态
+  const [draggingType, setDraggingType] = useState<ComponentConfig['type'] | null>(null);
+  const [canvasWidth, setCanvasWidth] = useState(1200);
 
   const {
     currentDashboard,
@@ -45,6 +51,18 @@ export function DashboardEdit() {
     }
   }, [id]);
 
+  // 动态计算画布宽度
+  useEffect(() => {
+    const updateWidth = () => {
+      if (canvasRef.current) {
+        setCanvasWidth(canvasRef.current.clientWidth);
+      }
+    };
+    updateWidth();
+    window.addEventListener('resize', updateWidth);
+    return () => window.removeEventListener('resize', updateWidth);
+  }, []);
+
   const handleSave = async () => {
     await saveDashboard();
     message.success('保存成功');
@@ -58,8 +76,20 @@ export function DashboardEdit() {
     message.success('发布成功');
   };
 
-  const handleDelete = (id: string) => {
-    removeComponent(id);
+  const handleDelete = (compId: string) => {
+    removeComponent(compId);
+  };
+
+  // 从组件面板拖拽开始
+  const handlePaletteDragStart = (type: ComponentConfig['type']) => {
+    setDraggingType(type);
+  };
+
+  // 拖拽到画布放下
+  const handleDrop = (_layout: LayoutItem[], _layoutItem: LayoutItem) => {
+    if (!draggingType) return;
+    addComponent(draggingType);
+    setDraggingType(null);
   };
 
   const selectedComponent = components.find(c => c.id === selectedComponentId) || null;
@@ -96,20 +126,27 @@ export function DashboardEdit() {
 
       <div className="edit-body">
         {/* 左侧组件面板 */}
-        <ComponentPalette onAdd={addComponent} />
+        <ComponentPalette onDragStart={handlePaletteDragStart} />
 
         {/* 中间画布 */}
-        <div className="edit-canvas">
+        <div
+          className="edit-canvas"
+          ref={canvasRef}
+          onDragOver={(e) => e.preventDefault()}
+        >
           <GridLayout
             className="layout"
             layout={layout}
             cols={COLS}
             rowHeight={ROW_HEIGHT}
-            width={1200}
+            width={canvasWidth}
             onLayoutChange={(newLayout) => updateLayout([...newLayout])}
             draggableHandle=".component-header"
             isResizable
             compactType="vertical"
+            isDroppable
+            onDrop={handleDrop}
+            droppingItem={{ i: '__dropping__', w: 6, h: 4 }}
           >
             {components.map(comp => (
               <div key={comp.id} className="grid-item">
@@ -137,7 +174,7 @@ export function DashboardEdit() {
             ))}
           </GridLayout>
 
-          {components.length === 0 && (
+          {components.length === 0 && !draggingType && (
             <div className="empty-canvas">
               从左侧拖拽组件到此处开始构建大屏
             </div>

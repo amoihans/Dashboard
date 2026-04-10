@@ -13,20 +13,25 @@ const COMPONENT_TYPES: { type: ComponentConfig['type']; label: string; icon: Rea
 ];
 
 interface Props {
-  onAdd: (type: ComponentConfig['type']) => void;
+  onDragStart: (type: ComponentConfig['type']) => void;
 }
 
-export function ComponentPalette({ onAdd }: Props) {
+export function ComponentPalette({ onDragStart }: Props) {
   return (
     <div className="palette">
       <div className="palette-title">组件库</div>
+      <div className="palette-hint">拖拽到画布</div>
       <div className="palette-list">
         {COMPONENT_TYPES.map(({ type, label, icon }) => (
           <div
             key={type}
             className="palette-item"
-            onClick={() => onAdd(type)}
-            title={`添加${label}`}
+            draggable
+            onDragStart={(e) => {
+              e.dataTransfer.setData('componentType', type);
+              onDragStart(type);
+            }}
+            title={`拖拽添加${label}`}
           >
             <div className="palette-icon">{icon}</div>
             <div className="palette-label">{label}</div>
