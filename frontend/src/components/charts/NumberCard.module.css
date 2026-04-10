@@ -1,0 +1,31 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.title {
+  font-size: 14px;
+  color: #999;
+  margin-bottom: 8px;
+}
+
+.value {
+  font-size: 48px;
+  font-weight: bold;
+  color: #1890ff;
+}
+
+.unit {
+  font-size: 18px;
+  margin-left: 4px;
+}
+
+.loading {
+  font-size: 14px;
+  color: #999;
+}

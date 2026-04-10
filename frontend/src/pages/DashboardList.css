@@ -1,0 +1,15 @@
+.list-page {
+  padding: 24px;
+}
+
+.list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.list-header h2 {
+  margin: 0;
+  font-size: 20px;
+}

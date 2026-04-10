@@ -1,0 +1,15 @@
+.manage-page {
+  padding: 24px;
+}
+
+.manage-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.manage-header h2 {
+  margin: 0;
+  font-size: 20px;
+}

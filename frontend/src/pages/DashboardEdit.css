@@ -1,0 +1,123 @@
+.edit-page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #f0f2f5;
+}
+
+.edit-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  height: 56px;
+  background: #fff;
+  border-bottom: 1px solid #e8e8e8;
+  flex-shrink: 0;
+}
+
+.toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dashboard-name {
+  font-size: 16px;
+  font-weight: 500;
+  color: #333;
+}
+
+.edit-body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.edit-canvas {
+  flex: 1;
+  padding: 16px;
+  overflow: auto;
+  position: relative;
+}
+
+.layout {
+  background: transparent;
+}
+
+.grid-item {
+  background: #fff;
+  border-radius: 4px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid transparent;
+}
+
+.grid-item:hover {
+  border-color: #1890ff;
+}
+
+.selected-border {
+  position: absolute;
+  inset: 0;
+  border: 2px solid #1890ff;
+  pointer-events: none;
+  border-radius: 4px;
+}
+
+.component-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 8px;
+  height: 32px;
+  background: #f7f8fa;
+  border-bottom: 1px solid #e8e8e8;
+  flex-shrink: 0;
+}
+
+.component-title {
+  font-size: 13px;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.component-body {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+.empty-canvas {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #bbb;
+  font-size: 16px;
+  pointer-events: none;
+}
+
+.edit-loading,
+.edit-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  font-size: 16px;
+}
+
+.edit-error {
+  color: #ff4d4f;
+}

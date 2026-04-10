@@ -1,0 +1,37 @@
+# Dependencies
+node_modules/
+backend/venv/
+backend/__pycache__/
+backend/.venv/
+*.pyc
+__pycache__/
+
+# Build outputs
+frontend/dist/
+frontend/node_modules/
+
+# Environment
+.env
+*.env
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+npm-debug.log*
+
+# Claude
+.claude/settings.local.json

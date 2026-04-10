@@ -1,0 +1,53 @@
+.preview-page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #0a0a0a;
+}
+
+.preview-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 24px;
+  background: rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.preview-title {
+  flex: 1;
+  color: #fff;
+  font-size: 16px;
+}
+
+.preview-canvas {
+  flex: 1;
+  overflow: auto;
+  padding: 16px;
+}
+
+.preview-canvas .layout {
+  background: transparent;
+}
+
+.preview-canvas .grid-item {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.preview-canvas .component-header {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 8px 12px;
+}
+
+.preview-canvas .component-title {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+}
+
+.preview-canvas .component-body {
+  height: calc(100% - 36px);
+  overflow: hidden;
+}
