@@ -7,6 +7,7 @@ import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import { dashboardApi } from '../services/api';
 import { ChartRenderer } from '../components/charts';
+import { useDashboardStore } from '../stores/dashboardStore';
 import { THEME_COLORS, type ThemeType, type ComponentConfig, type LayoutItem } from '../types';
 import './DashboardPreview.css';
 
@@ -20,7 +21,10 @@ export function DashboardPreview() {
   const [components, setComponents] = useState<ComponentConfig[]>([]);
   const [componentData, setComponentData] = useState<Record<string, Record<string, unknown>[]>>({});
   const [loading, setLoading] = useState(false);
-  const [theme, setTheme] = useState<ThemeType>('dark');
+
+  // 优先从 store 读取主题（编辑页切换后未保存也能同步）
+  const storeTheme = useDashboardStore(s => s.currentDashboard?.theme);
+  const [theme, setTheme] = useState<ThemeType>((storeTheme as ThemeType) || 'light');
 
   const themeColors = THEME_COLORS[theme];
 
@@ -33,6 +37,11 @@ export function DashboardPreview() {
       const lay = displayData.layout as LayoutItem[];
       setLayout(lay);
       setComponents(comps);
+
+      // 如果 store 中没有主题，用 API 返回的
+      if (!storeTheme) {
+        setTheme((displayData.theme as ThemeType) || 'light');
+      }
 
       // 刷新数据
       const refreshResult = await dashboardApi.refreshDisplay(id);

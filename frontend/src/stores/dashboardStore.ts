@@ -131,7 +131,7 @@ export const useDashboardStore = create<DashboardStore>((set, get) => ({
         description,
         layout: [],
         components: [],
-        theme: 'dark',
+        theme: 'light',
         status: 'draft',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
