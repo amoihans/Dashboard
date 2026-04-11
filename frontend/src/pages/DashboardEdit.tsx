@@ -25,6 +25,8 @@ export function DashboardEdit() {
   // 拖拽状态
   const [draggingType, setDraggingType] = useState<ComponentConfig['type'] | null>(null);
   const [canvasWidth, setCanvasWidth] = useState(1200);
+  // 用 ref 追踪拖拽位置，避免闭包问题
+  const dragPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
   const {
     currentDashboard,
@@ -86,19 +88,33 @@ export function DashboardEdit() {
     setDraggingType(type);
   };
 
-  // 拖拽到画布放下
-  const handleDrop = (_layout: LayoutItem[], layoutItem: LayoutItem) => {
+  // 拖拽到画布放下 - 使用 ref 中的实时拖拽位置
+  const handleDrop = (_layout: LayoutItem[], _layoutItem: LayoutItem) => {
     if (!draggingType) return;
-    // 将像素坐标转换为网格坐标
-    const colWidth = canvasWidth / COLS;
-    const gridX = Math.round(layoutItem.x / colWidth);
-    const gridY = Math.round(layoutItem.y / ROW_HEIGHT);
+    // 使用 ref 中捕获的最新拖拽坐标
+    const pos = dragPosRef.current;
+    const colWidth = canvasWidth > 0 ? canvasWidth / COLS : 50;
+    const gridX = Math.max(0, Math.round(pos.x / colWidth));
+    const gridY = Math.max(0, Math.round(pos.y / ROW_HEIGHT));
     addComponent(draggingType, { x: gridX, y: gridY });
     setDraggingType(null);
   };
 
+  // 组件面板拖拽中 - 实时更新 ref 坐标
+  const handlePaletteDragOver = (e: React.DragEvent) => {
+    if (!draggingType) return;
+    // 计算相对于画布的坐标
+    const canvasRect = canvasRef.current?.getBoundingClientRect();
+    if (canvasRect) {
+      dragPosRef.current = {
+        x: e.clientX - canvasRect.left,
+        y: e.clientY - canvasRect.top,
+      };
+    }
+  };
+
   const selectedComponent = components.find(c => c.id === selectedComponentId) || null;
-  const theme = currentDashboard?.theme || 'dark';
+  const theme = currentDashboard?.theme || 'light';
   const themeColors = THEME_COLORS[theme as ThemeType];
 
   if (loading) return <div className="edit-loading">加载中...</div>;
@@ -153,7 +169,10 @@ export function DashboardEdit() {
         <div
           className="edit-canvas"
           ref={canvasRef}
-          onDragOver={(e) => e.preventDefault()}
+          onDragOver={(e) => {
+            e.preventDefault();
+            handlePaletteDragOver(e);
+          }}
         >
           <GridLayout
             className="layout"
@@ -178,7 +197,6 @@ export function DashboardEdit() {
                 <div
                   className="component-header"
                   onMouseDown={(e) => {
-                    // 单击时先选中，mouseDown 用于区分点击和拖拽
                     if (e.button === 0) {
                       selectComponent(comp.id);
                     }
