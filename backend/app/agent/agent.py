@@ -250,6 +250,8 @@ class DashboardAgent:
                 desc = op.get("description", op.get("operation", ""))
                 plan_lines.append(f"{i}. {desc}")
 
+            print(f"[Agent] Operations to execute: {operations}")
+
             yield {
                 "type": "message",
                 "content": f"我将执行以下操作：\n{chr(10).join(plan_lines)}",
@@ -281,8 +283,10 @@ class DashboardAgent:
                 }
 
                 # 执行操作
+                print(f"[Agent] Executing operation: {operation_id} with params: {params}")
                 result, new_state = await self.executor.execute(operation_id, params, current_state)
                 current_state = new_state
+                print(f"[Agent] Operation result: {result.success}, {result.message}")
 
                 if result.success:
                     yield {

@@ -69,6 +69,7 @@ export function AgentChatPanel({ visible, onClose }: Props) {
 
   // 同步画布状态
   const syncCanvasState = useCallback((canvasState: { components: ComponentConfig[]; layout: LayoutItem[]; theme?: ThemeType }) => {
+    console.log('[AgentChatPanel] syncCanvasState called:', canvasState);
     const { components: newComponents, layout: newLayout, theme: newTheme } = canvasState;
 
     // 更新主题
@@ -77,11 +78,12 @@ export function AgentChatPanel({ visible, onClose }: Props) {
     }
 
     // 直接替换整个 components 和 layout
-    // 使用 setState 直接更新 store
+    // 使用 setState 直接更新 store，创建浅拷贝以确保引用变化触发更新
     useDashboardStore.setState({
-      components: newComponents,
-      layout: newLayout,
+      components: [...newComponents],
+      layout: [...newLayout],
     });
+    console.log('[AgentChatPanel] Store updated, new components:', newComponents.length, 'new layout:', newLayout.length);
   }, [currentDashboard, updateTheme]);
 
   // 发送消息
@@ -161,6 +163,7 @@ export function AgentChatPanel({ visible, onClose }: Props) {
                 };
                 setMessages(prev => [...prev, opMessage]);
               } else if (event.type === 'operation_complete') {
+                console.log('[AgentChatPanel] Received operation_complete event:', event);
                 const opMessage: AgentMessage = {
                   id: `op-complete-${Date.now()}`,
                   role: 'assistant',
@@ -175,6 +178,7 @@ export function AgentChatPanel({ visible, onClose }: Props) {
                 };
                 setMessages(prev => [...prev, opMessage]);
               } else if (event.type === 'canvas_sync') {
+                console.log('[AgentChatPanel] Received canvas_sync event:', event);
                 // 同步画布状态
                 if (event.canvas_state) {
                   syncCanvasState(event.canvas_state);

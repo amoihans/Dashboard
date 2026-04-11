@@ -166,7 +166,7 @@ class MemoryManager:
         for i, comp in enumerate(components):
             summary.append(
                 f"{i+1}. {comp.get('type', 'unknown')} - "
-                f"ID: {comp.get('id', '')[:8]}... - "
+                f"ID: {comp.get('id', '')} - "
                 f"标题: {comp.get('title', '未命名')} - "
                 f"位置: ({comp.get('layout', {}).get('x', 0)}, {comp.get('layout', {}).get('y', 0)})"
             )
