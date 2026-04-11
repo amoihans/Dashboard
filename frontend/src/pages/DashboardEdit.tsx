@@ -173,19 +173,25 @@ export function DashboardEdit() {
               >
                 <div
                   className="component-header"
-                  onClick={() => selectComponent(comp.id)}
+                  onMouseDown={(e) => {
+                    // 单击时先选中，mouseDown 用于区分点击和拖拽
+                    if (e.button === 0) {
+                      selectComponent(comp.id);
+                    }
+                  }}
                   style={{ cursor: 'move', background: themeColors.card, borderColor: themeColors.border }}
                 >
                   <span className="component-title" style={{ color: themeColors.text }}>{comp.title}</span>
-                  <Button
-                    type="text"
-                    size="small"
-                    icon={<Trash2 size={14} />}
+                  <span
+                    className="delete-btn"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleDelete(comp.id);
                     }}
-                  />
+                    onMouseDown={(e) => e.stopPropagation()}
+                  >
+                    <Trash2 size={14} />
+                  </span>
                 </div>
                 <div className="component-body">
                   <ChartRenderer config={comp} data={[]} />
