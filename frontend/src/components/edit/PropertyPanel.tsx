@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import { Input, Select, InputNumber, Button, Form, Collapse, message } from 'antd';
 import type { ComponentConfig, DataSourceType } from '../../types';
 import { queryApi } from '../../services/api';
@@ -29,29 +29,52 @@ export function PropertyPanel({ component, onUpdate }: Props) {
         nameKey: component.chartConfig?.nameKey || 'name',
         max: component.chartConfig?.max || 100,
         unit: component.chartConfig?.unit || '',
-        // ECharts 自定义配置
         echartsJson: JSON.stringify(component.chartConfig?.echartsConfig || {}, null, 2),
       });
     }
   }, [component]);
 
-  if (!component) {
-    return (
-      <div className="property-panel empty">
-        <div className="empty-hint">点击组件进行配置</div>
-      </div>
-    );
-  }
+  const handleEchartsChange = useCallback((value: string) => {
+    let parsed = {};
+    try {
+      if (value.trim()) {
+        parsed = JSON.parse(value);
+      }
+    } catch {
+      // ignore
+    }
+    const current = form.getFieldsValue();
+    const { title, sourceType, sql, datasetId, refreshInterval, xKey, yKey, valueKey, nameKey, max, unit, ...rest } = current;
+    onUpdate({
+      title: title as string,
+      dataSource: {
+        sourceType: sourceType as DataSourceType,
+        sql: sql as string,
+        datasetId: datasetId as string,
+      },
+      refreshInterval: refreshInterval as number,
+      chartConfig: {
+        ...rest,
+        xKey: xKey as string,
+        yKey: yKey as string,
+        valueKey: valueKey as string,
+        nameKey: nameKey as string,
+        max: max as number,
+        unit: unit as string,
+        echartsConfig: parsed,
+      },
+    });
+  }, [form, onUpdate]);
 
-  const handleValuesChange = (_: unknown, allValues: Record<string, unknown>) => {
+  const handleValuesChange = useCallback((_: unknown, allValues: Record<string, unknown>) => {
     const { title, sourceType, sql, datasetId, refreshInterval, xKey, yKey, valueKey, nameKey, max, unit, echartsJson, ...rest } = allValues;
 
     let echartsConfig = {};
-    if (echartsJson) {
+    if (echartsJson && typeof echartsJson === 'string') {
       try {
-        echartsConfig = JSON.parse(echartsJson as string);
+        echartsConfig = JSON.parse(echartsJson);
       } catch {
-        // 忽略 JSON 解析错误
+        // ignore
       }
     }
 
@@ -74,7 +97,7 @@ export function PropertyPanel({ component, onUpdate }: Props) {
         echartsConfig,
       },
     });
-  };
+  }, [onUpdate]);
 
   const handleTestSql = async () => {
     const sql = form.getFieldValue('sql');
@@ -86,6 +109,14 @@ export function PropertyPanel({ component, onUpdate }: Props) {
       message.error((e as Error).message);
     }
   };
+
+  if (!component) {
+    return (
+      <div className="property-panel empty">
+        <div className="empty-hint">点击组件进行配置</div>
+      </div>
+    );
+  }
 
   return (
     <div className="property-panel">
@@ -114,7 +145,7 @@ export function PropertyPanel({ component, onUpdate }: Props) {
             </Select>
           </Form.Item>
 
-          <Form.Item noStyle shouldUpdate={(prev, curr) => prev.sourceType !== curr.sourceType}>
+          <Form.Item noStyle shouldUpdate={(prev: Record<string, unknown>, curr: Record<string, unknown>) => prev.sourceType !== curr.sourceType}>
             {() => {
               const st = form.getFieldValue('sourceType');
               if (st === 'sql') {
@@ -132,9 +163,7 @@ export function PropertyPanel({ component, onUpdate }: Props) {
               if (st === 'dataset') {
                 return (
                   <Form.Item label="数据集" name="datasetId">
-                    <Select placeholder="选择数据集">
-                      {/* TODO: 动态加载 */}
-                    </Select>
+                    <Select placeholder="选择数据集" />
                   </Form.Item>
                 );
               }
@@ -197,13 +226,17 @@ export function PropertyPanel({ component, onUpdate }: Props) {
         <div className="form-section">
           <Collapse defaultActiveKey={[]} ghost>
             <Panel header="ECharts 高级配置" key="echarts">
-              <Form.Item label="ECharts Option (JSON)" name="echartsJson" extra="直接编辑 ECharts 原生配置，可覆盖图表样式、颜色、动画等">
-                <TextArea
-                  rows={10}
-                  placeholder='{"color": ["#5470c6"], "animation": true}'
-                  style={{ fontFamily: 'monospace', fontSize: 12 }}
-                />
-              </Form.Item>
+              <TextArea
+                rows={10}
+                placeholder='{"color": ["#5470c6"], "animation": true}'
+                style={{ fontFamily: 'monospace', fontSize: 12 }}
+                value={form.getFieldValue('echartsJson')}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  form.setFieldValue('echartsJson', val);
+                  handleEchartsChange(val);
+                }}
+              />
             </Panel>
           </Collapse>
         </div>
