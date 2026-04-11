@@ -9,7 +9,7 @@ export type ComponentType =
   | 'table';
 
 // 数据源类型
-export type DataSourceType = 'dataset' | 'sql' | 'api';
+export type DataSourceType = 'dataset' | 'sql' | 'finance-sql' | 'api';
 
 // 数据源配置
 export interface DataSourceConfig {

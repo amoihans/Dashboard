@@ -124,6 +124,12 @@ export const queryApi = {
       body: JSON.stringify({ sql, datasource_id: datasourceId }),
     }),
 
+  financeSql: (sql: string) =>
+    request<QueryResult>('/query/finance-sql', {
+      method: 'POST',
+      body: JSON.stringify({ sql }),
+    }),
+
   dataset: (datasetId: string) =>
     request<QueryResult>(`/query/dataset/${datasetId}`),
 };

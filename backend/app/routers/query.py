@@ -8,8 +8,13 @@ from app.models.models import ApiSource
 import httpx
 import json
 import re
+import sqlite3
+import os
 
 router = APIRouter(prefix="/api/query", tags=["数据查询"])
+
+# 财经模拟数据库路径
+FINANCE_DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "finance.db")
 
 
 # SQL 防注入检查
@@ -38,6 +43,30 @@ async def query_sql(req: SqlQueryRequest, db: AsyncSession = Depends(get_db)):
         rows = result.fetchall()
         columns = result.keys()
         data = [dict(zip(columns, row)) for row in rows]
+        return {"data": data, "total": len(data)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/finance-sql")
+async def query_finance_sql(req: SqlQueryRequest):
+    """查询财经模拟数据库"""
+    if not validate_sql(req.sql):
+        raise HTTPException(status_code=400, detail="仅支持 SELECT 查询")
+
+    if not os.path.exists(FINANCE_DB_PATH):
+        raise HTTPException(status_code=500, detail="财经数据库未初始化，请运行 seed_finance_db.py")
+
+    try:
+        # 使用同步 sqlite3 连接查询 finance.db
+        conn = sqlite3.connect(FINANCE_DB_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute(req.sql)
+        rows = cursor.fetchall()
+        columns = [desc[0] for desc in cursor.description] if cursor.description else []
+        data = [dict(zip(columns, row)) for row in rows]
+        conn.close()
         return {"data": data, "total": len(data)}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

@@ -50,6 +50,15 @@ async def refresh_display(dashboard_id: str):
                 except Exception:
                     refreshed.append({"id": comp_id, "data": [], "error": "查询失败"})
 
+            elif source_type == "finance-sql" and data_source.get("sql"):
+                from app.routers.query import query_finance_sql
+                from app.schemas.schemas import SqlQueryRequest
+                try:
+                    result = await query_finance_sql(SqlQueryRequest(sql=data_source["sql"]))
+                    refreshed.append({"id": comp_id, "data": result.get("data", [])})
+                except Exception:
+                    refreshed.append({"id": comp_id, "data": [], "error": "查询失败"})
+
             elif source_type == "sql" and data_source.get("sql"):
                 from app.routers.query import query_sql
                 from app.schemas.schemas import SqlQueryRequest

@@ -55,10 +55,23 @@ function makeDefaultComponent(type: ComponentConfig['type'], layout: LayoutItem)
     type,
     title: getDefaultTitle(type),
     layout,
-    dataSource: { sourceType: 'sql', sql: '' },
+    dataSource: { sourceType: 'finance-sql', sql: getDefaultSql(type) },
     chartConfig: getDefaultChartConfig(type),
     refreshInterval: 0,
   };
+}
+
+function getDefaultSql(type: ComponentConfig['type']): string {
+  const sqls: Record<ComponentConfig['type'], string> = {
+    line: "SELECT month as name, sales as value FROM monthly_sales ORDER BY month",
+    bar: "SELECT region as name, q1 as value FROM regional_sales",
+    pie: "SELECT category as name, revenue as value FROM product_revenue",
+    gauge: "SELECT value FROM kpi_metrics WHERE metric_name='营业收入完成率'",
+    candlestick: "SELECT trade_date as date, open_price as open, close_price as close, high_price as high, low_price as low FROM stock_price ORDER BY trade_date",
+    number: "SELECT value FROM kpi_metrics WHERE metric_name='全年营收'",
+    table: "SELECT department, employee_count, avg_salary, total_salary FROM department_stats",
+  };
+  return sqls[type] || "";
 }
 
 function getDefaultTitle(type: ComponentConfig['type']): string {

@@ -104,8 +104,11 @@ export function PropertyPanel({ component, onUpdate }: Props) {
   const handleTestSql = async () => {
     const sql = form.getFieldValue('sql');
     if (!sql) return;
+    const sourceType = form.getFieldValue('sourceType');
     try {
-      const result = await queryApi.sql(sql);
+      const result = sourceType === 'finance-sql'
+        ? await queryApi.financeSql(sql)
+        : await queryApi.sql(sql);
       message.success(`查询成功，共 ${result.total} 条数据`);
     } catch (e: unknown) {
       message.error((e as Error).message);
@@ -142,6 +145,7 @@ export function PropertyPanel({ component, onUpdate }: Props) {
           <div className="section-title">数据源</div>
           <Form.Item label="类型" name="sourceType">
             <Select>
+              <Select.Option value="finance-sql">财经数据</Select.Option>
               <Select.Option value="sql">SQL 查询</Select.Option>
               <Select.Option value="dataset">数据集</Select.Option>
             </Select>
@@ -150,7 +154,7 @@ export function PropertyPanel({ component, onUpdate }: Props) {
           <Form.Item noStyle shouldUpdate={(prev: Record<string, unknown>, curr: Record<string, unknown>) => prev.sourceType !== curr.sourceType}>
             {() => {
               const st = form.getFieldValue('sourceType');
-              if (st === 'sql') {
+              if (st === 'sql' || st === 'finance-sql') {
                 return (
                   <>
                     <Form.Item label="SQL" name="sql">

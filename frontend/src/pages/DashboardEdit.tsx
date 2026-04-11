@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { LayoutGrid, Trash2, Eye, Save, Send } from 'lucide-react';
 import GridLayout from 'react-grid-layout';
@@ -11,6 +11,7 @@ import { ChartRenderer } from '../components/charts';
 import { ComponentPalette } from '../components/edit/ComponentPalette';
 import { PropertyPanel } from '../components/edit/PropertyPanel';
 import { THEME_COLORS, type ComponentConfig, type ThemeType } from '../types';
+import { queryApi } from '../services/api';
 import './DashboardEdit.css';
 
 const COLS = 24;
@@ -27,6 +28,9 @@ export function DashboardEdit() {
   const [canvasWidth, setCanvasWidth] = useState(1200);
   const dragPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const [editingName, setEditingName] = useState(false);
+  // 组件数据
+  const [componentData, setComponentData] = useState<Record<string, Record<string, unknown>[]>>({});
+  const [dataLoading, setDataLoading] = useState(false);
 
   const {
     currentDashboard,
@@ -46,6 +50,33 @@ export function DashboardEdit() {
     updateTheme,
     updateName,
   } = useDashboardStore();
+
+  // 加载单个组件数据
+  const loadComponentData = useCallback(async (comp: ComponentConfig) => {
+    const { dataSource } = comp;
+    if (dataSource.sourceType === 'finance-sql' && dataSource.sql) {
+      try {
+        const result = await queryApi.financeSql(dataSource.sql);
+        setComponentData(prev => ({ ...prev, [comp.id]: result.data }));
+      } catch {
+        setComponentData(prev => ({ ...prev, [comp.id]: [] }));
+      }
+    } else if (dataSource.sourceType === 'sql' && dataSource.sql) {
+      try {
+        const result = await queryApi.sql(dataSource.sql);
+        setComponentData(prev => ({ ...prev, [comp.id]: result.data }));
+      } catch {
+        setComponentData(prev => ({ ...prev, [comp.id]: [] }));
+      }
+    }
+  }, []);
+
+  // 组件数据加载：当组件列表变化时，为每个组件加载数据
+  useEffect(() => {
+    if (components.length === 0) return;
+    setDataLoading(true);
+    Promise.all(components.map(loadComponentData)).finally(() => setDataLoading(false));
+  }, [components, loadComponentData]);
 
   useEffect(() => {
     if (isNew) {
@@ -235,7 +266,7 @@ export function DashboardEdit() {
                   </span>
                 </div>
                 <div className="component-body">
-                  <ChartRenderer config={comp} data={[]} />
+                  <ChartRenderer config={comp} data={componentData[comp.id] || []} loading={dataLoading} />
                 </div>
                 {selectedComponentId === comp.id && <div className="selected-border" />}
               </div>
