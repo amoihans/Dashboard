@@ -35,3 +35,6 @@ npm-debug.log*
 
 # Claude
 .claude/settings.local.json
+
+# Agent memory
+backend/.memory/

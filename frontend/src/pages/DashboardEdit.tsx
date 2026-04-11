@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { LayoutGrid, Trash2, Eye, Save, Send } from 'lucide-react';
+import { LayoutGrid, Trash2, Eye, Save, Send, Bot } from 'lucide-react';
 import GridLayout from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
@@ -10,6 +10,7 @@ import { useDashboardStore } from '../stores/dashboardStore';
 import { ChartRenderer } from '../components/charts';
 import { ComponentPalette } from '../components/edit/ComponentPalette';
 import { PropertyPanel } from '../components/edit/PropertyPanel';
+import { AgentChatPanel } from '../components/agent';
 import { THEME_COLORS, type ComponentConfig, type ThemeType } from '../types';
 import { queryApi } from '../services/api';
 import './DashboardEdit.css';
@@ -31,6 +32,7 @@ export function DashboardEdit() {
   // 组件数据
   const [componentData, setComponentData] = useState<Record<string, Record<string, unknown>[]>>({});
   const [dataLoading, setDataLoading] = useState(false);
+  const [agentVisible, setAgentVisible] = useState(false);
 
   const {
     currentDashboard,
@@ -213,6 +215,9 @@ export function DashboardEdit() {
           <Button type="primary" icon={<Send size={16} />} onClick={handlePublish}>
             发布
           </Button>
+          <Button icon={<Bot size={16} />} onClick={() => setAgentVisible(true)}>
+            Agent
+          </Button>
         </div>
       </div>
 
@@ -290,6 +295,12 @@ export function DashboardEdit() {
           }}
         />
       </div>
+
+      {/* Agent 助手面板 */}
+      <AgentChatPanel
+        visible={agentVisible}
+        onClose={() => setAgentVisible(false)}
+      />
     </div>
   );
 }
