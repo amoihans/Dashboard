@@ -10,7 +10,7 @@ import { useDashboardStore } from '../stores/dashboardStore';
 import { ChartRenderer } from '../components/charts';
 import { ComponentPalette } from '../components/edit/ComponentPalette';
 import { PropertyPanel } from '../components/edit/PropertyPanel';
-import { THEME_COLORS, type ComponentConfig, type LayoutItem, type ThemeType } from '../types';
+import { THEME_COLORS, type ComponentConfig, type ThemeType } from '../types';
 import './DashboardEdit.css';
 
 const COLS = 24;
@@ -88,22 +88,10 @@ export function DashboardEdit() {
     setDraggingType(type);
   };
 
-  // 拖拽到画布放下 - 使用 ref 中的实时拖拽位置
-  const handleDrop = (_layout: LayoutItem[], _layoutItem: LayoutItem) => {
+  // 拖拽经过画布 - 实时更新 ref 坐标（原生 drag 事件）
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault(); // 必须阻止默认行为才能触发 drop
     if (!draggingType) return;
-    // 使用 ref 中捕获的最新拖拽坐标
-    const pos = dragPosRef.current;
-    const colWidth = canvasWidth > 0 ? canvasWidth / COLS : 50;
-    const gridX = Math.max(0, Math.round(pos.x / colWidth));
-    const gridY = Math.max(0, Math.round(pos.y / ROW_HEIGHT));
-    addComponent(draggingType, { x: gridX, y: gridY });
-    setDraggingType(null);
-  };
-
-  // 组件面板拖拽中 - 实时更新 ref 坐标
-  const handlePaletteDragOver = (e: React.DragEvent) => {
-    if (!draggingType) return;
-    // 计算相对于画布的坐标
     const canvasRect = canvasRef.current?.getBoundingClientRect();
     if (canvasRect) {
       dragPosRef.current = {
@@ -111,6 +99,18 @@ export function DashboardEdit() {
         y: e.clientY - canvasRect.top,
       };
     }
+  };
+
+  // 拖拽到画布放下 - 使用 ref 中的实时拖拽位置
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    if (!draggingType) return;
+    const pos = dragPosRef.current;
+    const colWidth = canvasWidth > 0 ? canvasWidth / COLS : 50;
+    const gridX = Math.max(0, Math.round(pos.x / colWidth));
+    const gridY = Math.max(0, Math.round(pos.y / ROW_HEIGHT));
+    addComponent(draggingType, { x: gridX, y: gridY });
+    setDraggingType(null);
   };
 
   const selectedComponent = components.find(c => c.id === selectedComponentId) || null;
@@ -165,14 +165,12 @@ export function DashboardEdit() {
         {/* 左侧组件面板 */}
         <ComponentPalette onDragStart={handlePaletteDragStart} />
 
-        {/* 中间画布 */}
+        {/* 中间画布 - 用原生 drag-drop 接管，不再依赖 GridLayout 的 isDroppable */}
         <div
           className="edit-canvas"
           ref={canvasRef}
-          onDragOver={(e) => {
-            e.preventDefault();
-            handlePaletteDragOver(e);
-          }}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
         >
           <GridLayout
             className="layout"
@@ -184,9 +182,6 @@ export function DashboardEdit() {
             draggableHandle=".component-header"
             isResizable
             compactType="vertical"
-            isDroppable
-            onDrop={handleDrop}
-            droppingItem={{ i: '__dropping__', w: 6, h: 4 }}
           >
             {components.map(comp => (
               <div
