@@ -67,12 +67,14 @@ export function PropertyPanel({ component, onUpdate }: Props) {
   }, [form, onUpdate]);
 
   const handleValuesChange = useCallback((_: unknown, allValues: Record<string, unknown>) => {
-    const { title, sourceType, sql, datasetId, refreshInterval, xKey, yKey, valueKey, nameKey, max, unit, echartsJson, ...rest } = allValues;
+    const { title, sourceType, sql, datasetId, refreshInterval, xKey, yKey, valueKey, nameKey, max, unit, ...rest } = allValues;
 
-    let echartsConfig = {};
-    if (echartsJson && typeof echartsJson === 'string') {
+    // 从表单当前值读取 echartsJson，不依赖 allValues（因为它的变更由 handleEchartsChange 单独处理）
+    const echartsJsonStr = form.getFieldValue('echartsJson') as string | undefined;
+    let echartsConfig: Record<string, unknown> = {};
+    if (echartsJsonStr && typeof echartsJsonStr === 'string') {
       try {
-        echartsConfig = JSON.parse(echartsJson);
+        echartsConfig = JSON.parse(echartsJsonStr);
       } catch {
         // ignore
       }
