@@ -7,9 +7,10 @@ interface Props {
   title?: string;
   loading?: boolean;
   style?: React.CSSProperties;
+  overrideConfig?: Record<string, unknown>;
 }
 
-export function BarChart({ xData, yData, title, loading, style }: Props) {
+export function BarChart({ xData, yData, title, loading, style, overrideConfig }: Props) {
   const option: EChartsOption = {
     title: title ? { text: title, left: 'center', textStyle: { fontSize: 14 } } : undefined,
     grid: { top: title ? 40 : 20, right: 30, bottom: 30, left: 50 },
@@ -19,5 +20,5 @@ export function BarChart({ xData, yData, title, loading, style }: Props) {
     series: [{ type: 'bar', data: yData }],
   };
 
-  return <BaseChart option={option} loading={loading} style={style} />;
+  return <BaseChart option={option} loading={loading} style={style} overrideConfig={overrideConfig} />;
 }

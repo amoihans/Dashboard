@@ -9,9 +9,10 @@ interface Props {
   unit?: string;
   loading?: boolean;
   style?: React.CSSProperties;
+  overrideConfig?: Record<string, unknown>;
 }
 
-export function GaugeChart({ value, max = 100, min = 0, title, unit = '', loading, style }: Props) {
+export function GaugeChart({ value, max = 100, min = 0, title, unit = '', loading, style, overrideConfig }: Props) {
   const option: EChartsOption = {
     title: title ? { text: title, left: 'center', textStyle: { fontSize: 14 } } : undefined,
     series: [{
@@ -32,5 +33,5 @@ export function GaugeChart({ value, max = 100, min = 0, title, unit = '', loadin
     }],
   };
 
-  return <BaseChart option={option} loading={loading} style={style} />;
+  return <BaseChart option={option} loading={loading} style={style} overrideConfig={overrideConfig} />;
 }

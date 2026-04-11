@@ -37,6 +37,8 @@ interface DashboardStore {
   updateLayout: (layout: LayoutItem[]) => void;
   // 更新主题
   updateTheme: (theme: ThemeType) => void;
+  // 更新大屏名称
+  updateName: (name: string) => void;
 }
 
 function generateId() {
@@ -232,6 +234,14 @@ export const useDashboardStore = create<DashboardStore>((set, get) => ({
     set(s => ({
       currentDashboard: s.currentDashboard
         ? { ...s.currentDashboard, theme }
+        : null,
+    }));
+  },
+
+  updateName: (name: string) => {
+    set(s => ({
+      currentDashboard: s.currentDashboard
+        ? { ...s.currentDashboard, name }
         : null,
     }));
   },

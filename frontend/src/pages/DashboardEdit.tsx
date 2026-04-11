@@ -4,7 +4,7 @@ import { LayoutGrid, Trash2, Eye, Save, Send } from 'lucide-react';
 import GridLayout from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
-import { Button, message, Segmented } from 'antd';
+import { Button, message, Segmented, Input } from 'antd';
 
 import { useDashboardStore } from '../stores/dashboardStore';
 import { ChartRenderer } from '../components/charts';
@@ -25,8 +25,8 @@ export function DashboardEdit() {
   // 拖拽状态
   const [draggingType, setDraggingType] = useState<ComponentConfig['type'] | null>(null);
   const [canvasWidth, setCanvasWidth] = useState(1200);
-  // 用 ref 追踪拖拽位置，避免闭包问题
   const dragPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [editingName, setEditingName] = useState(false);
 
   const {
     currentDashboard,
@@ -44,6 +44,7 @@ export function DashboardEdit() {
     selectComponent,
     updateLayout,
     updateTheme,
+    updateName,
   } = useDashboardStore();
 
   useEffect(() => {
@@ -79,18 +80,27 @@ export function DashboardEdit() {
     message.success('发布成功');
   };
 
+  // 预览：未保存的大屏先保存再跳转
+  const handlePreview = async () => {
+    if (!currentDashboard?.id) {
+      await saveDashboard();
+      message.success('已保存，即将跳转预览');
+    }
+    if (currentDashboard?.id) {
+      navigate(`/dashboard/${currentDashboard.id}/preview`);
+    }
+  };
+
   const handleDelete = (compId: string) => {
     removeComponent(compId);
   };
 
-  // 从组件面板拖拽开始
   const handlePaletteDragStart = (type: ComponentConfig['type']) => {
     setDraggingType(type);
   };
 
-  // 拖拽经过画布 - 实时更新 ref 坐标（原生 drag 事件）
   const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault(); // 必须阻止默认行为才能触发 drop
+    e.preventDefault();
     if (!draggingType) return;
     const canvasRect = canvasRef.current?.getBoundingClientRect();
     if (canvasRect) {
@@ -101,7 +111,6 @@ export function DashboardEdit() {
     }
   };
 
-  // 拖拽到画布放下 - 使用 ref 中的实时拖拽位置
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     if (!draggingType) return;
@@ -128,7 +137,26 @@ export function DashboardEdit() {
           <Button icon={<LayoutGrid size={16} />} onClick={() => navigate('/')}>
             返回
           </Button>
-          <span className="dashboard-name">{currentDashboard?.name || '新大屏'}</span>
+          {editingName ? (
+            <Input
+              value={currentDashboard?.name || ''}
+              onChange={(e) => updateName(e.target.value)}
+              onBlur={() => setEditingName(false)}
+              onPressEnter={() => setEditingName(false)}
+              autoFocus
+              style={{ width: 200 }}
+              size="small"
+            />
+          ) : (
+            <span
+              className="dashboard-name"
+              onClick={() => setEditingName(true)}
+              title="点击修改名称"
+              style={{ cursor: 'text' }}
+            >
+              {currentDashboard?.name || '新大屏'}
+            </span>
+          )}
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -148,11 +176,7 @@ export function DashboardEdit() {
           <Button icon={<Save size={16} />} onClick={handleSave}>
             保存
           </Button>
-          <Button
-            icon={<Eye size={16} />}
-            onClick={() => currentDashboard?.id && navigate(`/dashboard/${currentDashboard.id}/preview`)}
-            disabled={!currentDashboard?.id}
-          >
+          <Button icon={<Eye size={16} />} onClick={handlePreview}>
             预览
           </Button>
           <Button type="primary" icon={<Send size={16} />} onClick={handlePublish}>
@@ -165,7 +189,7 @@ export function DashboardEdit() {
         {/* 左侧组件面板 */}
         <ComponentPalette onDragStart={handlePaletteDragStart} />
 
-        {/* 中间画布 - 用原生 drag-drop 接管，不再依赖 GridLayout 的 isDroppable */}
+        {/* 中间画布 */}
         <div
           className="edit-canvas"
           ref={canvasRef}

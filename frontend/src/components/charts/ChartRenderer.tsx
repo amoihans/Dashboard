@@ -13,7 +13,6 @@ interface Props {
   loading?: boolean;
 }
 
-// 数据转换辅助
 function extractXData(data: Record<string, unknown>[], key: string): string[] {
   return data.map(d => String(d[key] ?? ''));
 }
@@ -24,30 +23,31 @@ function extractYData(data: Record<string, unknown>[], key: string): number[] {
 
 export function ChartRenderer({ config, data, loading }: Props) {
   const { type, title } = config;
+  const echartsConfig = config.chartConfig?.echartsConfig as Record<string, unknown> | undefined;
 
   switch (type) {
     case 'line': {
       const xKey = config.chartConfig?.xKey as string || 'name';
       const yKey = config.chartConfig?.yKey as string || 'value';
-      return <LineChart xData={extractXData(data, xKey)} yData={extractYData(data, yKey)} title={title} loading={loading} />;
+      return <LineChart xData={extractXData(data, xKey)} yData={extractYData(data, yKey)} title={title} loading={loading} overrideConfig={echartsConfig} />;
     }
     case 'bar': {
       const xKey = config.chartConfig?.xKey as string || 'name';
       const yKey = config.chartConfig?.yKey as string || 'value';
-      return <BarChart xData={extractXData(data, xKey)} yData={extractYData(data, yKey)} title={title} loading={loading} />;
+      return <BarChart xData={extractXData(data, xKey)} yData={extractYData(data, yKey)} title={title} loading={loading} overrideConfig={echartsConfig} />;
     }
     case 'pie': {
       const nameKey = config.chartConfig?.nameKey as string || 'name';
       const valueKey = config.chartConfig?.valueKey as string || 'value';
       const pieData = data.map(d => ({ name: String(d[nameKey] ?? ''), value: Number(d[valueKey] ?? 0) }));
-      return <PieChart data={pieData} title={title} loading={loading} />;
+      return <PieChart data={pieData} title={title} loading={loading} overrideConfig={echartsConfig} />;
     }
     case 'gauge': {
       const valueKey = config.chartConfig?.valueKey as string || 'value';
       const max = (config.chartConfig?.max as number) || 100;
       const unit = (config.chartConfig?.unit as string) || '';
       const val = data.length > 0 ? Number(data[0][valueKey] ?? 0) : 0;
-      return <GaugeChart value={val} max={max} title={title} unit={unit} loading={loading} />;
+      return <GaugeChart value={val} max={max} title={title} unit={unit} loading={loading} overrideConfig={echartsConfig} />;
     }
     case 'candlestick': {
       const dateKey = config.chartConfig?.dateKey as string || 'date';
@@ -58,7 +58,7 @@ export function ChartRenderer({ config, data, loading }: Props) {
         high: Number(d['high'] ?? 0),
         low: Number(d['low'] ?? 0),
       }));
-      return <CandlestickChart data={cData} title={title} loading={loading} />;
+      return <CandlestickChart data={cData} title={title} loading={loading} overrideConfig={echartsConfig} />;
     }
     case 'number': {
       const valueKey = config.chartConfig?.valueKey as string || 'value';

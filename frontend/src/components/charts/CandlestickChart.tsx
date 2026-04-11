@@ -14,9 +14,10 @@ interface Props {
   title?: string;
   loading?: boolean;
   style?: React.CSSProperties;
+  overrideConfig?: Record<string, unknown>;
 }
 
-export function CandlestickChart({ data, title, loading, style }: Props) {
+export function CandlestickChart({ data, title, loading, style, overrideConfig }: Props) {
   const categories = data.map(d => d.date);
   const candleData = data.map(d => [d.open, d.close, d.low, d.high]);
 
@@ -29,5 +30,5 @@ export function CandlestickChart({ data, title, loading, style }: Props) {
     series: [{ type: 'candlestick', data: candleData }],
   };
 
-  return <BaseChart option={option} loading={loading} style={style} />;
+  return <BaseChart option={option} loading={loading} style={style} overrideConfig={overrideConfig} />;
 }

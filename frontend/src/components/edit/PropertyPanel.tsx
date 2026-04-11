@@ -1,8 +1,11 @@
 import { useEffect } from 'react';
-import { Input, Select, InputNumber, Button, Form, message } from 'antd';
+import { Input, Select, InputNumber, Button, Form, Collapse, message } from 'antd';
 import type { ComponentConfig, DataSourceType } from '../../types';
 import { queryApi } from '../../services/api';
 import './PropertyPanel.css';
+
+const { TextArea } = Input;
+const { Panel } = Collapse;
 
 interface Props {
   component: ComponentConfig | null;
@@ -26,6 +29,8 @@ export function PropertyPanel({ component, onUpdate }: Props) {
         nameKey: component.chartConfig?.nameKey || 'name',
         max: component.chartConfig?.max || 100,
         unit: component.chartConfig?.unit || '',
+        // ECharts 自定义配置
+        echartsJson: JSON.stringify(component.chartConfig?.echartsConfig || {}, null, 2),
       });
     }
   }, [component]);
@@ -39,7 +44,16 @@ export function PropertyPanel({ component, onUpdate }: Props) {
   }
 
   const handleValuesChange = (_: unknown, allValues: Record<string, unknown>) => {
-    const { title, sourceType, sql, datasetId, refreshInterval, ...chartConfig } = allValues;
+    const { title, sourceType, sql, datasetId, refreshInterval, xKey, yKey, valueKey, nameKey, max, unit, echartsJson, ...rest } = allValues;
+
+    let echartsConfig = {};
+    if (echartsJson) {
+      try {
+        echartsConfig = JSON.parse(echartsJson as string);
+      } catch {
+        // 忽略 JSON 解析错误
+      }
+    }
 
     onUpdate({
       title: title as string,
@@ -49,7 +63,16 @@ export function PropertyPanel({ component, onUpdate }: Props) {
         datasetId: datasetId as string,
       },
       refreshInterval: refreshInterval as number,
-      chartConfig: chartConfig as Record<string, unknown>,
+      chartConfig: {
+        ...rest,
+        xKey: xKey as string,
+        yKey: yKey as string,
+        valueKey: valueKey as string,
+        nameKey: nameKey as string,
+        max: max as number,
+        unit: unit as string,
+        echartsConfig,
+      },
     });
   };
 
@@ -91,24 +114,33 @@ export function PropertyPanel({ component, onUpdate }: Props) {
             </Select>
           </Form.Item>
 
-          {form.getFieldValue('sourceType') === 'sql' && (
-            <>
-              <Form.Item label="SQL" name="sql">
-                <Input.TextArea rows={4} placeholder="SELECT ..." />
-              </Form.Item>
-              <Button size="small" onClick={handleTestSql} style={{ marginBottom: 12 }}>
-                测试查询
-              </Button>
-            </>
-          )}
-
-          {form.getFieldValue('sourceType') === 'dataset' && (
-            <Form.Item label="数据集" name="datasetId">
-              <Select placeholder="选择数据集">
-                {/* TODO: 动态加载数据集列表 */}
-              </Select>
-            </Form.Item>
-          )}
+          <Form.Item noStyle shouldUpdate={(prev, curr) => prev.sourceType !== curr.sourceType}>
+            {() => {
+              const st = form.getFieldValue('sourceType');
+              if (st === 'sql') {
+                return (
+                  <>
+                    <Form.Item label="SQL" name="sql">
+                      <TextArea rows={4} placeholder="SELECT ..." />
+                    </Form.Item>
+                    <Button size="small" onClick={handleTestSql} style={{ marginBottom: 8 }}>
+                      测试查询
+                    </Button>
+                  </>
+                );
+              }
+              if (st === 'dataset') {
+                return (
+                  <Form.Item label="数据集" name="datasetId">
+                    <Select placeholder="选择数据集">
+                      {/* TODO: 动态加载 */}
+                    </Select>
+                  </Form.Item>
+                );
+              }
+              return null;
+            }}
+          </Form.Item>
 
           <Form.Item label="刷新间隔(秒)" name="refreshInterval">
             <InputNumber min={0} max={3600} style={{ width: '100%' }} />
@@ -117,7 +149,7 @@ export function PropertyPanel({ component, onUpdate }: Props) {
 
         <div className="form-section">
           <div className="section-title">图表配置</div>
-          {component.type === 'line' || component.type === 'bar' ? (
+          {(component.type === 'line' || component.type === 'bar') && (
             <>
               <Form.Item label="X轴字段" name="xKey">
                 <Input placeholder="字段名" />
@@ -126,7 +158,8 @@ export function PropertyPanel({ component, onUpdate }: Props) {
                 <Input placeholder="字段名" />
               </Form.Item>
             </>
-          ) : component.type === 'pie' ? (
+          )}
+          {component.type === 'pie' && (
             <>
               <Form.Item label="名称字段" name="nameKey">
                 <Input placeholder="字段名" />
@@ -135,7 +168,8 @@ export function PropertyPanel({ component, onUpdate }: Props) {
                 <Input placeholder="字段名" />
               </Form.Item>
             </>
-          ) : component.type === 'gauge' ? (
+          )}
+          {component.type === 'gauge' && (
             <>
               <Form.Item label="值字段" name="valueKey">
                 <Input placeholder="字段名" />
@@ -147,7 +181,8 @@ export function PropertyPanel({ component, onUpdate }: Props) {
                 <Input placeholder="如: %, 元" />
               </Form.Item>
             </>
-          ) : component.type === 'number' ? (
+          )}
+          {component.type === 'number' && (
             <>
               <Form.Item label="值字段" name="valueKey">
                 <Input placeholder="字段名" />
@@ -156,7 +191,21 @@ export function PropertyPanel({ component, onUpdate }: Props) {
                 <Input placeholder="如: 万, %" />
               </Form.Item>
             </>
-          ) : null}
+          )}
+        </div>
+
+        <div className="form-section">
+          <Collapse defaultActiveKey={[]} ghost>
+            <Panel header="ECharts 高级配置" key="echarts">
+              <Form.Item label="ECharts Option (JSON)" name="echartsJson" extra="直接编辑 ECharts 原生配置，可覆盖图表样式、颜色、动画等">
+                <TextArea
+                  rows={10}
+                  placeholder='{"color": ["#5470c6"], "animation": true}'
+                  style={{ fontFamily: 'monospace', fontSize: 12 }}
+                />
+              </Form.Item>
+            </Panel>
+          </Collapse>
         </div>
       </Form>
     </div>
