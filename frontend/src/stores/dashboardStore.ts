@@ -26,7 +26,7 @@ interface DashboardStore {
   publishDashboard: () => Promise<void>;
 
   // 添加组件
-  addComponent: (type: ComponentConfig['type']) => void;
+  addComponent: (type: ComponentConfig['type'], dropPosition?: { x: number; y: number }) => void;
   // 删除组件
   removeComponent: (id: string) => void;
   // 选中组件
@@ -176,15 +176,20 @@ export const useDashboardStore = create<DashboardStore>((set, get) => ({
     }));
   },
 
-  addComponent: (type: ComponentConfig['type']) => {
+  addComponent: (type: ComponentConfig['type'], dropPosition?: { x: number; y: number }) => {
     const layout = makeDefaultLayout();
     const component = makeDefaultComponent(type, layout);
 
-    // 计算 y 位置（避免重叠）
-    const { layout: currentLayout } = get();
-    if (currentLayout.length > 0) {
-      const maxY = Math.max(...currentLayout.map(l => l.y + l.h));
-      layout.y = maxY;
+    // 如果有放置位置，直接使用；否则自动计算避免重叠
+    if (dropPosition) {
+      layout.x = dropPosition.x;
+      layout.y = dropPosition.y;
+    } else {
+      const { layout: currentLayout } = get();
+      if (currentLayout.length > 0) {
+        const maxY = Math.max(...currentLayout.map(l => l.y + l.h));
+        layout.y = maxY;
+      }
     }
 
     set(s => ({

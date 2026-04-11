@@ -87,9 +87,13 @@ export function DashboardEdit() {
   };
 
   // 拖拽到画布放下
-  const handleDrop = (_layout: LayoutItem[], _layoutItem: LayoutItem) => {
+  const handleDrop = (_layout: LayoutItem[], layoutItem: LayoutItem) => {
     if (!draggingType) return;
-    addComponent(draggingType);
+    // 将像素坐标转换为网格坐标
+    const colWidth = canvasWidth / COLS;
+    const gridX = Math.round(layoutItem.x / colWidth);
+    const gridY = Math.round(layoutItem.y / ROW_HEIGHT);
+    addComponent(draggingType, { x: gridX, y: gridY });
     setDraggingType(null);
   };
 
