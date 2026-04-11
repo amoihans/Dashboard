@@ -5,6 +5,7 @@ import { Button, Table, Tag, Popconfirm, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { dashboardApi } from '../services/api';
 import type { Dashboard } from '../types';
+import { THEME_COLORS } from '../types';
 import './DashboardList.css';
 
 export function DashboardList() {
@@ -61,6 +62,14 @@ export function DashboardList() {
         <Tag color={status === 'published' ? 'green' : 'default'}>
           {status === 'published' ? '已发布' : '草稿'}
         </Tag>
+      ),
+    },
+    {
+      title: '主题',
+      dataIndex: 'theme',
+      key: 'theme',
+      render: (theme: string) => (
+        <Tag color="default">{THEME_COLORS[theme as keyof typeof THEME_COLORS]?.label || theme}</Tag>
       ),
     },
     { title: '更新时间', dataIndex: 'updatedAt', key: 'updatedAt' },

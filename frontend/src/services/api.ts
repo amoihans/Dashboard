@@ -60,6 +60,7 @@ export const dashboardApi = {
       description?: string;
       layout: unknown[];
       components: unknown[];
+      theme: string;
     }>(`/display/${id}`),
 
   refreshDisplay: (id: string) => request<RefreshResult>(`/display/${id}/refresh`),

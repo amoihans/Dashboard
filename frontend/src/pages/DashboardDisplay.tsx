@@ -5,7 +5,7 @@ import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import { dashboardApi } from '../services/api';
 import { ChartRenderer } from '../components/charts';
-import type { ComponentConfig, LayoutItem } from '../types';
+import { THEME_COLORS, type ThemeType, type ComponentConfig, type LayoutItem } from '../types';
 import './DashboardDisplay.css';
 
 const COLS = 24;
@@ -17,15 +17,20 @@ export function DashboardDisplay() {
   const [layout, setLayout] = useState<LayoutItem[]>([]);
   const [components, setComponents] = useState<ComponentConfig[]>([]);
   const [componentData, setComponentData] = useState<Record<string, Record<string, unknown>[]>>({});
+  const [theme, setTheme] = useState<ThemeType>('dark');
   const refreshTimersRef = useRef<Record<string, number>>({});
+
+  const themeColors = THEME_COLORS[theme];
 
   const loadData = async () => {
     if (!id) return;
     try {
       const displayData = await dashboardApi.getDisplay(id);
       const comps = displayData.components as ComponentConfig[];
-      setLayout(displayData.layout as LayoutItem[]);
+      const lay = displayData.layout as LayoutItem[];
+      setLayout(lay);
       setComponents(comps);
+      setTheme((displayData.theme as ThemeType) || 'dark');
 
       const refreshResult = await dashboardApi.refreshDisplay(id);
       const dataMap: Record<string, Record<string, unknown>[]> = {};
@@ -41,11 +46,19 @@ export function DashboardDisplay() {
   useEffect(() => {
     loadData();
 
-    // 设置自动刷新
+    return () => {
+      Object.values(refreshTimersRef.current).forEach(clearInterval);
+    };
+  }, [id]);
+
+  // 设置自动刷新
+  useEffect(() => {
+    Object.values(refreshTimersRef.current).forEach(clearInterval);
+    refreshTimersRef.current = {};
+
     components.forEach(comp => {
       if (comp.refreshInterval && comp.refreshInterval > 0) {
         const timer = window.setInterval(() => {
-          // 单个组件刷新
           dashboardApi.refreshDisplay(id!).then(res => {
             const dataMap: Record<string, Record<string, unknown>[]> = {};
             res.components.forEach(c => { dataMap[c.id] = c.data; });
@@ -55,16 +68,12 @@ export function DashboardDisplay() {
         refreshTimersRef.current[comp.id] = timer;
       }
     });
-
-    return () => {
-      Object.values(refreshTimersRef.current).forEach(clearInterval);
-    };
-  }, [id]);
+  }, [components, id]);
 
   const width = containerRef.current?.clientWidth || 1920;
 
   return (
-    <div className="display-page" ref={containerRef}>
+    <div className="display-page" ref={containerRef} style={{ background: themeColors.bg }}>
       <GridLayout
         className="layout"
         layout={layout}
@@ -76,9 +85,13 @@ export function DashboardDisplay() {
         margin={[8, 8]}
       >
         {components.map(comp => (
-          <div key={comp.id} className="grid-item">
-            <div className="component-header">
-              <span className="component-title">{comp.title}</span>
+          <div
+            key={comp.id}
+            className="grid-item"
+            style={{ background: themeColors.card, borderColor: themeColors.border }}
+          >
+            <div className="component-header" style={{ background: themeColors.card, borderColor: themeColors.border }}>
+              <span className="component-title" style={{ color: themeColors.text }}>{comp.title}</span>
             </div>
             <div className="component-body">
               <ChartRenderer

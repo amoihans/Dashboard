@@ -12,6 +12,7 @@ class DashboardBase(BaseModel):
 class DashboardCreate(DashboardBase):
     layout: str = "[]"
     components: str = "[]"
+    theme: str = "dark"
 
 
 class DashboardUpdate(BaseModel):
@@ -20,12 +21,14 @@ class DashboardUpdate(BaseModel):
     layout: Optional[str] = None
     components: Optional[str] = None
     status: Optional[str] = None
+    theme: Optional[str] = None
 
 
 class DashboardOut(DashboardBase):
     id: str
     layout: str
     components: str
+    theme: str
     status: str
     created_at: str
     updated_at: str

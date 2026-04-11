@@ -4,13 +4,13 @@ import { LayoutGrid, Trash2, Eye, Save, Send } from 'lucide-react';
 import GridLayout from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
-import { Button, message } from 'antd';
+import { Button, message, Segmented } from 'antd';
 
 import { useDashboardStore } from '../stores/dashboardStore';
 import { ChartRenderer } from '../components/charts';
 import { ComponentPalette } from '../components/edit/ComponentPalette';
 import { PropertyPanel } from '../components/edit/PropertyPanel';
-import type { ComponentConfig, LayoutItem } from '../types';
+import { THEME_COLORS, type ComponentConfig, type LayoutItem, type ThemeType } from '../types';
 import './DashboardEdit.css';
 
 const COLS = 24;
@@ -41,6 +41,7 @@ export function DashboardEdit() {
     removeComponent,
     selectComponent,
     updateLayout,
+    updateTheme,
   } = useDashboardStore();
 
   useEffect(() => {
@@ -93,6 +94,8 @@ export function DashboardEdit() {
   };
 
   const selectedComponent = components.find(c => c.id === selectedComponentId) || null;
+  const theme = currentDashboard?.theme || 'dark';
+  const themeColors = THEME_COLORS[theme as ThemeType];
 
   if (loading) return <div className="edit-loading">加载中...</div>;
   if (error) return <div className="edit-error">{error}</div>;
@@ -107,6 +110,20 @@ export function DashboardEdit() {
           </Button>
           <span className="dashboard-name">{currentDashboard?.name || '新大屏'}</span>
         </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 13, color: '#666' }}>主题:</span>
+          <Segmented
+            value={theme}
+            onChange={(val) => updateTheme(val as ThemeType)}
+            options={Object.entries(THEME_COLORS).map(([key, v]) => ({
+              label: v.label,
+              value: key,
+            }))}
+            size="small"
+          />
+        </div>
+
         <div className="toolbar-right">
           <Button icon={<Save size={16} />} onClick={handleSave}>
             保存
@@ -149,13 +166,17 @@ export function DashboardEdit() {
             droppingItem={{ i: '__dropping__', w: 6, h: 4 }}
           >
             {components.map(comp => (
-              <div key={comp.id} className="grid-item">
+              <div
+                key={comp.id}
+                className="grid-item"
+                style={{ background: themeColors.card, borderColor: themeColors.border }}
+              >
                 <div
                   className="component-header"
                   onClick={() => selectComponent(comp.id)}
-                  style={{ cursor: 'move' }}
+                  style={{ cursor: 'move', background: themeColors.card, borderColor: themeColors.border }}
                 >
-                  <span className="component-title">{comp.title}</span>
+                  <span className="component-title" style={{ color: themeColors.text }}>{comp.title}</span>
                   <Button
                     type="text"
                     size="small"

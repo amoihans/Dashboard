@@ -20,6 +20,7 @@ async def get_display_dashboard(dashboard_id: str):
             "description": obj.description,
             "layout": json.loads(obj.layout or "[]"),
             "components": json.loads(obj.components or "[]"),
+            "theme": obj.theme,
         }
 
 

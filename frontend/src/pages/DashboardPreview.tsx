@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, RefreshCw } from 'lucide-react';
-import { Button, message } from 'antd';
+import { Button, message, Segmented } from 'antd';
 import GridLayout from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import { dashboardApi } from '../services/api';
 import { ChartRenderer } from '../components/charts';
-import type { ComponentConfig, LayoutItem } from '../types';
+import { THEME_COLORS, type ThemeType, type ComponentConfig, type LayoutItem } from '../types';
 import './DashboardPreview.css';
 
 const COLS = 24;
@@ -20,6 +20,9 @@ export function DashboardPreview() {
   const [components, setComponents] = useState<ComponentConfig[]>([]);
   const [componentData, setComponentData] = useState<Record<string, Record<string, unknown>[]>>({});
   const [loading, setLoading] = useState(false);
+  const [theme, setTheme] = useState<ThemeType>('dark');
+
+  const themeColors = THEME_COLORS[theme];
 
   const loadData = async () => {
     if (!id) return;
@@ -27,7 +30,8 @@ export function DashboardPreview() {
     try {
       const displayData = await dashboardApi.getDisplay(id);
       const comps = displayData.components as ComponentConfig[];
-      setLayout(displayData.layout as LayoutItem[]);
+      const lay = displayData.layout as LayoutItem[];
+      setLayout(lay);
       setComponents(comps);
 
       // 刷新数据
@@ -49,12 +53,30 @@ export function DashboardPreview() {
   }, [id]);
 
   return (
-    <div className="preview-page">
-      <div className="preview-toolbar">
-        <Button icon={<ArrowLeft size={16} />} onClick={() => navigate(-1)}>
+    <div className="preview-page" style={{ background: themeColors.bg }}>
+      <div className="preview-toolbar" style={{ background: themeColors.card, borderColor: themeColors.border }}>
+        <Button
+          icon={<ArrowLeft size={16} />}
+          onClick={() => navigate(-1)}
+          style={{ color: themeColors.text, borderColor: themeColors.border }}
+        >
           返回
         </Button>
-        <span className="preview-title">预览模式</span>
+        <span className="preview-title" style={{ color: themeColors.text }}>预览模式</span>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ color: themeColors.text, fontSize: 13 }}>主题:</span>
+          <Segmented
+            value={theme}
+            onChange={(val) => setTheme(val as ThemeType)}
+            options={Object.entries(THEME_COLORS).map(([key, v]) => ({
+              label: v.label,
+              value: key,
+            }))}
+            size="small"
+          />
+        </div>
+
         <Button icon={<RefreshCw size={16} />} onClick={loadData}>
           刷新数据
         </Button>
@@ -71,9 +93,13 @@ export function DashboardPreview() {
           isResizable={false}
         >
           {components.map(comp => (
-            <div key={comp.id} className="grid-item">
-              <div className="component-header">
-                <span className="component-title">{comp.title}</span>
+            <div
+              key={comp.id}
+              className="grid-item"
+              style={{ background: themeColors.card, borderColor: themeColors.border }}
+            >
+              <div className="component-header" style={{ background: themeColors.card, borderColor: themeColors.border }}>
+                <span className="component-title" style={{ color: themeColors.text }}>{comp.title}</span>
               </div>
               <div className="component-body">
                 <ChartRenderer

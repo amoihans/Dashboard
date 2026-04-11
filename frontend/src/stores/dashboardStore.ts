@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Dashboard, ComponentConfig, LayoutItem } from '../types';
+import type { Dashboard, ComponentConfig, LayoutItem, ThemeType } from '../types';
 import { dashboardApi } from '../services/api';
 
 interface DashboardStore {
@@ -35,6 +35,8 @@ interface DashboardStore {
   updateComponent: (id: string, updates: Partial<ComponentConfig>) => void;
   // 更新布局
   updateLayout: (layout: LayoutItem[]) => void;
+  // 更新主题
+  updateTheme: (theme: ThemeType) => void;
 }
 
 function generateId() {
@@ -129,6 +131,7 @@ export const useDashboardStore = create<DashboardStore>((set, get) => ({
         description,
         layout: [],
         components: [],
+        theme: 'dark',
         status: 'draft',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -148,6 +151,7 @@ export const useDashboardStore = create<DashboardStore>((set, get) => ({
       description: currentDashboard.description,
       layout: JSON.stringify(layout),
       components: JSON.stringify(components),
+      theme: currentDashboard.theme,
     };
 
     try {
@@ -217,5 +221,13 @@ export const useDashboardStore = create<DashboardStore>((set, get) => ({
       });
       return { layout, components };
     });
+  },
+
+  updateTheme: (theme: ThemeType) => {
+    set(s => ({
+      currentDashboard: s.currentDashboard
+        ? { ...s.currentDashboard, theme }
+        : null,
+    }));
   },
 }));

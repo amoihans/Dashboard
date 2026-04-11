@@ -15,6 +15,7 @@ class Dashboard(Base):
     description = Column(Text, nullable=True)
     layout = Column(Text, nullable=False, default="[]")  # JSON
     components = Column(Text, nullable=False, default="[]")  # JSON
+    theme = Column(String(20), nullable=False, default="dark")  # dark / light / blue / green / purple / red
     status = Column(String(20), nullable=False, default="draft")  # draft / published
     created_at = Column(String(30), nullable=False)
     updated_at = Column(String(30), nullable=False)
