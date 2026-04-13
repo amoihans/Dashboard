@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from app.core.database import init_db
-from app.routers import dashboards, datasets, datasources, query, display, agent
+from app.routers import dashboards, datasets, datasources, query, display, agent, custom_component
 
 
 @asynccontextmanager
@@ -34,6 +34,7 @@ app.include_router(datasources.apisource_router)
 app.include_router(query.router)
 app.include_router(display.router)
 app.include_router(agent.router)
+app.include_router(custom_component.router)
 
 
 @app.get("/api/health")

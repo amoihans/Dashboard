@@ -7,6 +7,8 @@ import { DashboardPreview } from './pages/DashboardPreview';
 import { DashboardDisplay } from './pages/DashboardDisplay';
 import { DatasetManage } from './pages/DatasetManage';
 import { DatasourceManage } from './pages/DatasourceManage';
+import { CustomComponentBuilder } from './pages/CustomComponentBuilder';
+import { CustomComponentLibrary } from './pages/CustomComponentLibrary';
 
 export default function App() {
   return (
@@ -20,6 +22,8 @@ export default function App() {
           <Route path="/display/:id" element={<DashboardDisplay />} />
           <Route path="/datasets" element={<DatasetManage />} />
           <Route path="/datasources" element={<DatasourceManage />} />
+          <Route path="/custom-component/builder" element={<CustomComponentBuilder />} />
+          <Route path="/custom-component/library" element={<CustomComponentLibrary />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </BrowserRouter>

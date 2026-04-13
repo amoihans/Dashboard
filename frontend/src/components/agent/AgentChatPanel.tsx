@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { Button, Input, Spin, Alert } from 'antd';
+import { Button, Input } from 'antd';
 import { Send, X, Minimize2, Maximize2, Bot, User, Loader } from 'lucide-react';
 import type { ComponentConfig, LayoutItem, ThemeType } from '../../types';
 import { useDashboardStore } from '../../stores/dashboardStore';
@@ -50,11 +50,8 @@ export function AgentChatPanel({ visible, onClose }: Props) {
   const [executing, setExecuting] = useState(false);
   const [expanded, setExpanded] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const eventSourceRef = useRef<EventSource | null>(null);
 
   const {
-    components,
-    layout,
     currentDashboard,
     updateTheme,
   } = useDashboardStore();
@@ -213,15 +210,6 @@ export function AgentChatPanel({ visible, onClose }: Props) {
       setExecuting(false);
     }
   }, [input, executing, currentDashboard, syncCanvasState]);
-
-  // 停止执行
-  const abortExecution = useCallback(() => {
-    if (eventSourceRef.current) {
-      eventSourceRef.current.close();
-      eventSourceRef.current = null;
-    }
-    setExecuting(false);
-  }, []);
 
   // 键盘发送
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {

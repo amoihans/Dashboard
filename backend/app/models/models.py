@@ -57,3 +57,18 @@ class ApiSource(Base):
     auth_type = Column(String(50), nullable=True)  # none / bearer / basic / api_key
     auth_config = Column(Text, nullable=True)  # JSON
     created_at = Column(String(30), nullable=False)
+
+
+class CustomComponent(Base):
+    __tablename__ = "custom_components"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    name = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    category = Column(String(100), nullable=True)  # card / chart / info / other
+    json_schema = Column(Text, nullable=False)  # JSON
+    data_source_config = Column(Text, nullable=True)  # JSON
+    thumbnail = Column(Text, nullable=True)  # 缩略图 URL
+    is_published = Column(Integer, nullable=False, default=0)  # 0: 草稿, 1: 已发布
+    created_at = Column(String(30), nullable=False)
+    updated_at = Column(String(30), nullable=False)

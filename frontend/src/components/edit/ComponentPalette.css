@@ -57,3 +57,96 @@
   font-size: 12px;
   color: #333;
 }
+
+.palette-item-custom {
+  border: 1px dashed #d9d9d9;
+  background: #fafafa;
+}
+
+.palette-item-custom:hover {
+  border-color: #722ed1;
+  background: #f9f0ff;
+}
+
+.palette-item-custom .palette-icon {
+  color: #722ed1;
+}
+
+.palette-item-add {
+  border: 1px dashed #52c41a;
+  background: #fafafa;
+  cursor: pointer;
+}
+
+.palette-item-add:hover {
+  border-color: #73d13d;
+  background: #f6ffed;
+}
+
+.palette-item-add .palette-icon {
+  color: #52c41a;
+}
+
+.palette-divider {
+  display: flex;
+  align-items: center;
+  margin: 8px 0 4px;
+  padding: 0 4px;
+  font-size: 11px;
+  color: #999;
+}
+
+.palette-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #e8e8e8;
+  margin-left: 8px;
+}
+
+/* Custom Component Selector Modal */
+.custom-selector-empty {
+  text-align: center;
+  padding: 40px 0;
+  color: #999;
+}
+
+.custom-selector-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  padding: 12px 0;
+}
+
+.custom-selector-item {
+  padding: 16px;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.custom-selector-item:hover {
+  border-color: #722ed1;
+  background: #f9f0ff;
+}
+
+.custom-selector-name {
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.custom-selector-desc {
+  font-size: 12px;
+  color: #999;
+  margin-bottom: 8px;
+}
+
+.custom-selector-tag {
+  display: inline-block;
+  font-size: 11px;
+  padding: 2px 8px;
+  background: #f0f0f0;
+  border-radius: 4px;
+  color: #666;
+}

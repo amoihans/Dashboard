@@ -26,6 +26,7 @@ export function DashboardEdit() {
 
   // 拖拽状态
   const [draggingType, setDraggingType] = useState<ComponentConfig['type'] | null>(null);
+  const [draggingCustomId, setDraggingCustomId] = useState<string | undefined>(undefined);
   const [canvasWidth, setCanvasWidth] = useState(1200);
   const dragPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const [editingName, setEditingName] = useState(false);
@@ -128,8 +129,14 @@ export function DashboardEdit() {
     removeComponent(compId);
   };
 
-  const handlePaletteDragStart = (type: ComponentConfig['type']) => {
+  const handlePaletteDragStart = (type: ComponentConfig['type'], customComponentId?: string) => {
     setDraggingType(type);
+    setDraggingCustomId(customComponentId);
+  };
+
+  // 添加自定义组件到画布（点击直接添加）
+  const handleAddCustomComponent = (customComponentId: string, customComponentName: string) => {
+    addComponent('custom', undefined, customComponentId, customComponentName);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -151,9 +158,27 @@ export function DashboardEdit() {
     const colWidth = canvasWidth > 0 ? canvasWidth / COLS : 50;
     const gridX = Math.max(0, Math.round(pos.x / colWidth));
     const gridY = Math.max(0, Math.round(pos.y / ROW_HEIGHT));
-    addComponent(draggingType, { x: gridX, y: gridY });
+    addComponent(draggingType, { x: gridX, y: gridY }, draggingCustomId);
     setDraggingType(null);
+    setDraggingCustomId(undefined);
   };
+
+  // 监听组件面板的 palette-add 事件（点击添加）
+  useEffect(() => {
+    const canvasEl = canvasRef.current;
+    if (!canvasEl) return;
+
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      const colWidth = canvasWidth > 0 ? canvasWidth / COLS : 50;
+      const gridX = Math.max(0, Math.round(detail.x / colWidth));
+      const gridY = Math.max(0, Math.round(detail.y / ROW_HEIGHT));
+      addComponent(detail.type, { x: gridX, y: gridY }, detail.customComponentId);
+    };
+
+    canvasEl.addEventListener('palette-add', handler);
+    return () => canvasEl.removeEventListener('palette-add', handler);
+  }, [canvasWidth, addComponent]);
 
   const selectedComponent = components.find(c => c.id === selectedComponentId) || null;
   const theme = currentDashboard?.theme || 'light';
@@ -223,7 +248,7 @@ export function DashboardEdit() {
 
       <div className="edit-body">
         {/* 左侧组件面板 */}
-        <ComponentPalette onDragStart={handlePaletteDragStart} />
+        <ComponentPalette onDragStart={handlePaletteDragStart} onAddCustomComponent={handleAddCustomComponent} />
 
         {/* 中间画布 */}
         <div

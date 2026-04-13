@@ -135,3 +135,43 @@ class ApiQueryRequest(BaseModel):
     method: str = "GET"
     params: Optional[dict] = None
     body: Optional[dict] = None
+
+
+# ========== CustomComponent ==========
+class CustomComponentBase(BaseModel):
+    name: str
+    description: Optional[str] = None
+    category: Optional[str] = None
+
+
+class CustomComponentCreate(CustomComponentBase):
+    json_schema: str = "{}"
+    data_source_config: Optional[str] = None
+    is_published: int = 0
+
+
+class CustomComponentUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    category: Optional[str] = None
+    json_schema: Optional[str] = None
+    data_source_config: Optional[str] = None
+    thumbnail: Optional[str] = None
+    is_published: Optional[int] = None
+
+
+class CustomComponentOut(CustomComponentBase):
+    id: str
+    json_schema: str
+    data_source_config: Optional[str]
+    thumbnail: Optional[str]
+    is_published: int
+    created_at: str
+    updated_at: str
+
+    class Config:
+        from_attributes = True
+
+
+class JsonSchemaValidateRequest(BaseModel):
+    json_schema: dict
