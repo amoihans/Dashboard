@@ -6,6 +6,7 @@ import { GaugeChart } from './GaugeChart';
 import { CandlestickChart } from './CandlestickChart';
 import { NumberCard } from './NumberCard';
 import { TableChart } from './TableChart';
+import { JsonRenderChart } from './JsonRenderChart';
 
 interface Props {
   config: ComponentConfig;
@@ -69,6 +70,14 @@ export function ChartRenderer({ config, data, loading }: Props) {
     case 'table': {
       const cols = (config.chartConfig?.columns as { key: string; title: string; dataIndex: string }[]) || [];
       return <TableChart columns={cols} data={data} loading={loading} />;
+    }
+    case 'custom': {
+      return <JsonRenderChart
+        customComponentId={config.customComponentId || ''}
+        data={data}
+        overrides={config.customOverrides}
+        loading={loading}
+      />;
     }
     default:
       return <div style={{ padding: 20, color: '#999' }}>未知组件类型: {type}</div>;

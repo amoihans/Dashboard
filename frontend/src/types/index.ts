@@ -6,10 +6,11 @@ export type ComponentType =
   | 'gauge'
   | 'candlestick'
   | 'number'
-  | 'table';
+  | 'table'
+  | 'custom';
 
 // 数据源类型
-export type DataSourceType = 'dataset' | 'sql' | 'finance-sql' | 'api';
+export type DataSourceType = 'dataset' | 'sql' | 'finance-sql' | 'api' | 'inline';
 
 // 数据源配置
 export interface DataSourceConfig {
@@ -48,6 +49,10 @@ export interface ComponentConfig {
   dataSource: DataSourceConfig;
   chartConfig: Record<string, unknown>;
   refreshInterval?: number;
+  // custom 类型专用
+  customComponentId?: string;  // 关联的自定义组件 ID
+  customComponentName?: string;  // 关联的自定义组件名称
+  customOverrides?: Record<string, unknown>;  // 自定义组件属性覆盖
 }
 
 // Dashboard 模型
@@ -170,4 +175,68 @@ export interface RefreshResult {
     data: Record<string, unknown>[];
     error?: string;
   }[];
+}
+
+// ========== CustomComponent ==========
+
+// 数据源配置
+export interface DataSourceConfig {
+  sourceType: 'inline' | 'sql';
+  sql?: string;                    // SQL 模式使用
+  exampleData?: Record<string, unknown>[];  // inline 模式使用
+  dataFormat?: DataFormat;        // 数据格式定义
+}
+
+// 数据格式定义
+export interface DataFormat {
+  description: string;             // 人类可读的数据格式说明
+  structure?: string;              // 数据结构描述
+  required?: string[];             // 必要字段
+}
+
+// JSON Schema (新格式)
+export interface ComponentJsonSchema {
+  version: '1.0';
+  name: string;
+  dataFormat?: DataFormat;
+  exampleData?: Record<string, unknown>[];
+  root: Record<string, unknown>;  // 根组件 schema
+}
+
+export interface CustomComponent {
+  id: string;
+  name: string;
+  description?: string;
+  category?: string;
+  json_schema: string;  // JSON string (API 返回 snake_case)
+  data_source_config?: string;  // JSON string - DataSourceConfig
+  thumbnail?: string;
+  is_published: number;  // 0: 草稿, 1: 已发布
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateCustomComponent {
+  name: string;
+  description?: string;
+  category?: string;
+  json_schema: string;
+  data_source_config?: string;
+  is_published?: number;
+}
+
+export interface UpdateCustomComponent {
+  name?: string;
+  description?: string;
+  category?: string;
+  json_schema?: string;
+  data_source_config?: string;
+  thumbnail?: string;
+  is_published?: number;
+}
+
+// JSON Schema 验证结果
+export interface JsonSchemaValidateResult {
+  valid: boolean;
+  error?: string;
 }

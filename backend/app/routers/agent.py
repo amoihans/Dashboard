@@ -2,16 +2,22 @@
 Agent SSE 路由
 POST /api/agent/chat - 发送消息，获取 SSE 流
 GET /api/agent/status - 检查 cc-switch 状态
+POST /api/agent/build-component - 生成自定义组件 Schema
 """
 import json
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from sse_starlette.sse import EventSourceResponse
+from pydantic import BaseModel
 
 from app.agent import agent
 from app.ai import CCSwitchConfig
 
 router = APIRouter(prefix="/api/agent", tags=["Agent助手"])
+
+
+class BuildComponentRequest(BaseModel):
+    message: str
 
 
 @router.get("/status")
@@ -81,3 +87,51 @@ async def chat(request: dict):
             }
 
     return EventSourceResponse(event_generator())
+
+
+@router.post("/build-component")
+async def build_component(request: BuildComponentRequest):
+    """
+    根据用户描述生成自定义组件的 JSON Schema
+
+    请求体：
+    {
+        "message": "创建一个 Tab 组件，第一个 Tab 显示国内数据，第二个显示国外数据"
+    }
+
+    返回：
+    {
+        "schema": { ... },      // 组件 Schema
+        "exampleData": [...],   // 示例数据
+        "dataFormat": {...}     // 数据格式定义
+    }
+    """
+    message = request.message
+
+    if not message:
+        raise HTTPException(status_code=400, detail="message is required")
+
+    # 检查 cc-switch 是否可用
+    if not CCSwitchConfig.is_available():
+        raise HTTPException(
+            status_code=500,
+            detail="cc-switch not available or AI Provider not configured"
+        )
+
+    current_provider = CCSwitchConfig.get_current_provider()
+    if not current_provider or not current_provider.get("api_key"):
+        raise HTTPException(
+            status_code=500,
+            detail="No valid AI Provider configured"
+        )
+
+    try:
+        # 调用 agent 生成组件
+        from app.agent.agent import build_component as build_comp
+        result = await build_comp(message)
+        return result
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))

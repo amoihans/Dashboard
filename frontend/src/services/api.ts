@@ -10,6 +10,10 @@ import type {
   CreateApiSource,
   QueryResult,
   RefreshResult,
+  CustomComponent,
+  CreateCustomComponent,
+  UpdateCustomComponent,
+  JsonSchemaValidateResult,
 } from '../types';
 
 const BASE_URL = 'http://localhost:8000/api';
@@ -132,4 +136,45 @@ export const queryApi = {
 
   dataset: (datasetId: string) =>
     request<QueryResult>(`/query/dataset/${datasetId}`),
+};
+
+// ========== CustomComponent ==========
+export const customComponentApi = {
+  list: (published?: number, category?: string) => {
+    const params = new URLSearchParams();
+    if (published !== undefined) params.set('published', String(published));
+    if (category) params.set('category', category);
+    const query = params.toString();
+    return request<CustomComponent[]>(`/custom-components${query ? `?${query}` : ''}`);
+  },
+
+  get: (id: string) => request<CustomComponent>(`/custom-components/${id}`),
+
+  create: (data: CreateCustomComponent) =>
+    request<CustomComponent>('/custom-components', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  update: (id: string, data: UpdateCustomComponent) =>
+    request<CustomComponent>(`/custom-components/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+
+  delete: (id: string) =>
+    request<{ ok: boolean }>(`/custom-components/${id}`, { method: 'DELETE' }),
+
+  validate: (jsonSchema: object) =>
+    request<JsonSchemaValidateResult>('/custom-components/validate', {
+      method: 'POST',
+      body: JSON.stringify({ json_schema: jsonSchema }),
+    }),
+
+  // SQL 预览 - 执行 SQL 查询返回数据
+  previewSql: (sql: string) =>
+    request<{ data: Record<string, unknown>[] }>('/custom-components/preview', {
+      method: 'POST',
+      body: JSON.stringify({ sql }),
+    }),
 };

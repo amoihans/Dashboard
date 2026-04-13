@@ -26,7 +26,7 @@ interface DashboardStore {
   publishDashboard: () => Promise<void>;
 
   // 添加组件
-  addComponent: (type: ComponentConfig['type'], dropPosition?: { x: number; y: number }) => void;
+  addComponent: (type: ComponentConfig['type'], dropPosition?: { x: number; y: number }, customComponentId?: string, customComponentName?: string) => void;
   // 删除组件
   removeComponent: (id: string) => void;
   // 选中组件
@@ -70,6 +70,7 @@ function getDefaultSql(type: ComponentConfig['type']): string {
     candlestick: "SELECT trade_date as date, open_price as open, close_price as close, high_price as high, low_price as low FROM stock_price ORDER BY trade_date",
     number: "SELECT value FROM kpi_metrics WHERE metric_name='全年营收'",
     table: "SELECT department, employee_count, avg_salary, total_salary FROM department_stats",
+    custom: "",
   };
   return sqls[type] || "";
 }
@@ -83,6 +84,7 @@ function getDefaultTitle(type: ComponentConfig['type']): string {
     candlestick: 'K线图',
     number: '数字卡片',
     table: '表格',
+    custom: '自定义组件',
   };
   return map[type] || '图表';
 }
@@ -108,6 +110,8 @@ function getDefaultChartConfig(type: ComponentConfig['type']): Record<string, un
       return { displayValue: 0, unit: '' };
     case 'table':
       return { columns: [], dataSource: [] };
+    case 'custom':
+      return {};
     default:
       return {};
   }
@@ -191,9 +195,20 @@ export const useDashboardStore = create<DashboardStore>((set, get) => ({
     }));
   },
 
-  addComponent: (type: ComponentConfig['type'], dropPosition?: { x: number; y: number }) => {
+addComponent: (type: ComponentConfig['type'], dropPosition?: { x: number; y: number }, customComponentId?: string, customComponentName?: string) => {
     const layout = makeDefaultLayout();
-    const component = makeDefaultComponent(type, layout);
+    let component = makeDefaultComponent(type, layout);
+
+    // 如果是自定义组件，设置 customComponentId、customComponentName 和 title
+    if (type === 'custom' && customComponentId) {
+      component = {
+        ...component,
+        customComponentId,
+        customComponentName: customComponentName || '自定义组件',
+        title: customComponentName || '自定义组件',
+        dataSource: { sourceType: 'inline' },
+      };
+    }
 
     // 如果有放置位置，直接使用；否则自动计算避免重叠
     if (dropPosition) {

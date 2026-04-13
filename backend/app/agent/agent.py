@@ -352,3 +352,142 @@ class DashboardAgent:
 
 # 全局 Agent 实例
 agent = DashboardAgent()
+
+
+# ========== 自定义组件构建 ==========
+
+BUILD_COMPONENT_SYSTEM_PROMPT = """你是一个专业的自定义组件构建助手。你的任务是将用户的自然语言描述转换为通用的 JSON Schema 组件定义。
+
+## 组件 Schema 格式 (version: "1.0")
+
+```json
+{
+  "version": "1.0",
+  "name": "组件名称",
+  "dataFormat": {
+    "description": "数据格式说明",
+    "required": ["field1", "field2"]
+  },
+  "exampleData": [...],
+  "root": {
+    "component": "组件类型",
+    "props": {...},
+    "children": [...]
+  }
+}
+```
+
+## 支持的组件类型
+
+| component | 说明 | 特殊字段 |
+|-----------|------|---------|
+| flex | 弹性布局容器 | direction (row/column), gap, wrap |
+| card | 卡片容器 | - |
+| tabs | Tab 切换容器 | tabs: [{key, label}] |
+| table | 数据表格 | columns: [{key, label, width}] |
+| heading | 标题 | level (1-6) |
+| text | 文本 | value (支持 ${变量} 插值) |
+| metric | 指标展示 | value, label, trend |
+| list | 列表 | #each 循环 |
+| divider | 分隔线 | - |
+| space | 间距 | size |
+| div/span/p/h1-h6/button/img | 基础 HTML | - |
+
+## 变量插值格式
+- \${field} - 取顶层字段
+- \${item.field} - 取循环项的字段
+- \${tabs[0].label} - 取数组元素
+
+## 循环渲染
+使用 #each 和 #eachItem：
+```json
+{
+  "component": "list",
+  "#each": "\${items}",
+  "#eachItem": {
+    "component": "div",
+    "children": "\${item.name}"
+  }
+}
+```
+
+## 数据格式定义
+根据组件需要定义数据格式，例如表格组件：
+```json
+{
+  "description": "表格数据，每行包含名称和数值",
+  "required": ["name", "value"],
+  "structure": "数组类型，每项包含 name(字符串) 和 value(数值)"
+}
+```
+
+## 输出要求
+1. 必须返回有效的 JSON
+2. 必须包含 version: "1.0"
+3. 必须包含 root 字段
+4. 必须包含 exampleData 作为示例数据
+5. 组件名要简洁明确
+
+**重要：只输出 JSON，不要有其他内容。**
+"""
+
+
+BUILD_COMPONENT_USER_PROMPT = """根据以下描述生成自定义组件 Schema：
+
+{description}
+
+请生成完整的组件定义 JSON：
+"""
+
+
+async def build_component(user_message: str) -> dict:
+    """
+    根据用户描述生成自定义组件的 Schema
+
+    Args:
+        user_message: 用户对组件的描述
+
+    Returns:
+        包含 schema, exampleData, dataFormat 的字典
+    """
+    from app.ai import create_dashboard_agent_provider
+
+    provider_info = create_dashboard_agent_provider()
+    if not provider_info:
+        raise Exception("AI Provider not configured")
+
+    provider, provider_name = provider_info
+
+    # 构建消息列表
+    messages = [
+        {"role": "system", "content": BUILD_COMPONENT_SYSTEM_PROMPT},
+        {"role": "user", "content": BUILD_COMPONENT_USER_PROMPT.format(description=user_message)},
+    ]
+
+    # 调用 LLM
+    try:
+        response = await provider.chat(messages)
+    except Exception as e:
+        raise Exception(f"AI call failed: {e}")
+
+    # 解析响应
+    try:
+        # 尝试从 Markdown 代码块中提取 JSON
+        code_block_match = re.search(r'```(?:json)?\s*([\s\S]*?)\s*```', response, re.IGNORECASE)
+        if code_block_match:
+            json_str = code_block_match.group(1)
+        else:
+            json_str = response
+
+        # 提取 JSON 对象
+        json_match = re.search(r'\{[\s\S]*\}', json_str)
+        if json_match:
+            result = json.loads(json_match.group())
+            return result
+        else:
+            raise Exception("Failed to parse LLM response")
+
+    except json.JSONDecodeError as e:
+        raise Exception(f"JSON decode error: {e}\n\nOriginal response: {response[:500]}")
+    except Exception as e:
+        raise Exception(f"Build component failed: {e}")

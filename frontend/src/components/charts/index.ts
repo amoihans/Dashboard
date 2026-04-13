@@ -7,3 +7,5 @@ export { NumberCard } from './NumberCard';
 export { TableChart } from './TableChart';
 export { ChartRenderer } from './ChartRenderer';
 export { BaseChart } from './BaseChart';
+export { JsonRenderChart } from './JsonRenderChart';
+export { UniversalRender } from './UniversalRender';

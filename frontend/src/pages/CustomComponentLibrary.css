@@ -1,0 +1,36 @@
+.library-page {
+  padding: 24px;
+}
+
+.library-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.library-header h2 {
+  margin: 0;
+}
+
+.library-filters {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.filter-tags {
+  display: flex;
+  gap: 8px;
+}
+
+.filter-tags .ant-tag {
+  cursor: pointer;
+}
+
+.filter-tags .ant-tag.active {
+  background: #1890ff;
+  color: #fff;
+  border-color: #1890ff;
+}
