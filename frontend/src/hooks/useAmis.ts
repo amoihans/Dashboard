@@ -26,6 +26,7 @@ async function loadAmis(): Promise<any> {
         const link = document.createElement('link');
         link.rel = 'stylesheet';
         link.href = 'https://unpkg.com/amis@2.0.0/sdk/sdk.css';
+        link.id = 'amis-sdk-css';
         document.head.appendChild(link);
         cssLoaded = true;
       }
@@ -70,19 +71,24 @@ export function useAmis({ schema, data }: UseAmisOptions = {}) {
 
   useEffect(() => {
     // 只有 schema 的 JSON 表示变化了才渲染
+    if (!schema) return;
+
     const currentSchemaJson = JSON.stringify(schema);
     const currentDataJson = JSON.stringify(data);
-    const schemaUnchanged = lastRenderedSchema.current === currentSchemaJson;
-    const dataUnchanged = lastRenderedData.current === currentDataJson;
 
-    if (schemaUnchanged && dataUnchanged && scopedRef.current) {
-      // 已经渲染过了，不需要重新渲染
+    // 检查是否真的需要渲染
+    const shouldRender = !scopedRef.current ||
+      lastRenderedSchema.current !== currentSchemaJson ||
+      lastRenderedData.current !== currentDataJson;
+
+    if (!shouldRender) {
+      console.log('[useAmis] Instance', instanceId.current, 'skipping, no change');
       return;
     }
 
-    console.log('[useAmis] Instance', instanceId.current, 'rendering, schema:', schema?.type);
+    console.log('[useAmis] Instance', instanceId.current, 'rendering, schema:', schema?.type, 'changed');
 
-    if (!containerRef.current || !schema) return;
+    if (!containerRef.current) return;
 
     // 等待 SDK 加载
     if (!amisInstance) {
@@ -93,9 +99,10 @@ export function useAmis({ schema, data }: UseAmisOptions = {}) {
     // 卸载旧组件
     if (scopedRef.current) {
       try {
+        console.log('[useAmis] Instance', instanceId.current, 'unmounting');
         scopedRef.current.unmount?.();
       } catch (e) {
-        // ignore
+        console.log('[useAmis] Instance', instanceId.current, 'unmount error:', e);
       }
       scopedRef.current = null;
     }
@@ -108,6 +115,7 @@ export function useAmis({ schema, data }: UseAmisOptions = {}) {
         schema as any,
         data as any,
         {
+          scope: instanceId.current, // 添加 scope 区分不同实例
           fetcher: async () => ({ status: 200, headers: {}, data: { status: 200, msg: 'ok', data: {} } } as any),
         }
       );
