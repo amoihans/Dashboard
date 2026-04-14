@@ -64,24 +64,23 @@ export function useAmis({ schema, data }: UseAmisOptions = {}) {
     loadAmis().finally(() => setNeedsInit(false));
   }, []);
 
-  // 渲染逻辑 - 用 ref 追踪是否真的需要重新渲染
-  const lastRendered = useRef<{ schema: any; data: any } | null>(null);
+  // 渲染逻辑 - 用 ref 追踪，只有 schema 真正变化时才重新渲染
+  const lastRenderedSchema = useRef<any>(null);
+  const lastRenderedData = useRef<any>(null);
 
   useEffect(() => {
-    console.log('[useAmis] Instance', instanceId.current, 'effect ran, schema:', schema?.type);
+    // 只有 schema 的 JSON 表示变化了才渲染
+    const currentSchemaJson = JSON.stringify(schema);
+    const currentDataJson = JSON.stringify(data);
+    const schemaUnchanged = lastRenderedSchema.current === currentSchemaJson;
+    const dataUnchanged = lastRenderedData.current === currentDataJson;
 
-    // 检查是否真的需要重新渲染
-    const schemaChanged = !lastRendered.current ||
-      JSON.stringify(lastRendered.current.schema) !== JSON.stringify(schema);
-    const dataChanged = !lastRendered.current ||
-      JSON.stringify(lastRendered.current.data) !== JSON.stringify(data);
-
-    if (!schemaChanged && !dataChanged) {
-      console.log('[useAmis] Instance', instanceId.current, 'skipping render, no change');
+    if (schemaUnchanged && dataUnchanged && scopedRef.current) {
+      // 已经渲染过了，不需要重新渲染
       return;
     }
 
-    console.log('[useAmis] Instance', instanceId.current, 'schema changed:', schemaChanged, 'data changed:', dataChanged);
+    console.log('[useAmis] Instance', instanceId.current, 'rendering, schema:', schema?.type);
 
     if (!containerRef.current || !schema) return;
 
@@ -90,8 +89,6 @@ export function useAmis({ schema, data }: UseAmisOptions = {}) {
       console.log('[useAmis] Instance', instanceId.current, 'waiting for SDK');
       return;
     }
-
-    console.log('[useAmis] Instance', instanceId.current, 'rendering to container');
 
     // 卸载旧组件
     if (scopedRef.current) {
@@ -114,7 +111,8 @@ export function useAmis({ schema, data }: UseAmisOptions = {}) {
           fetcher: async () => ({ status: 200, headers: {}, data: { status: 200, msg: 'ok', data: {} } } as any),
         }
       );
-      lastRendered.current = { schema, data };
+      lastRenderedSchema.current = currentSchemaJson;
+      lastRenderedData.current = currentDataJson;
       console.log('[useAmis] Instance', instanceId.current, 'rendered OK');
     } catch (e) {
       console.error('[useAmis] Instance', instanceId.current, 'render error:', e);
