@@ -6,7 +6,7 @@ import { GaugeChart } from './GaugeChart';
 import { CandlestickChart } from './CandlestickChart';
 import { NumberCard } from './NumberCard';
 import { TableChart } from './TableChart';
-import { JsonRenderChart } from './JsonRenderChart';
+import { AmisChart } from './AmisChart';
 
 interface Props {
   config: ComponentConfig;
@@ -72,9 +72,8 @@ export function ChartRenderer({ config, data, loading }: Props) {
       return <TableChart columns={cols} data={data} loading={loading} />;
     }
     case 'custom': {
-      return <JsonRenderChart
+      return <AmisChart
         customComponentId={config.customComponentId || ''}
-        data={data}
         overrides={config.customOverrides}
         loading={loading}
       />;

@@ -11,10 +11,12 @@
   },
   "dependencies": {
     "@ant-design/icons": "^6.1.1",
+    "amis": "^6.13.0",
     "antd": "^6.3.5",
     "echarts": "^6.0.0",
     "echarts-for-react": "^3.0.6",
     "lucide-react": "^1.8.0",
+    "mobx-react-lite": "^4.1.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-grid-layout": "^1.5.3",

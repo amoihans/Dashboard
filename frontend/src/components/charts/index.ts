@@ -8,4 +8,5 @@ export { TableChart } from './TableChart';
 export { ChartRenderer } from './ChartRenderer';
 export { BaseChart } from './BaseChart';
 export { JsonRenderChart } from './JsonRenderChart';
+export { AmisChart } from './AmisChart';
 export { UniversalRender } from './UniversalRender';
