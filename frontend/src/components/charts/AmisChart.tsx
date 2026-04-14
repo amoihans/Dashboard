@@ -14,103 +14,98 @@ interface Props {
   loading?: boolean;
 }
 
-// 用于大屏编辑页面的 iframe 渲染版本
+// 使用 iframe 渲染 amis 的版本
 export function AmisChart({ customComponentId, schema: directSchema, overrides, loading }: Props) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  // 使用 commId 区分不同的 iframe 实例
-  const commId = customComponentId || 'default';
   const [isReady, setIsReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [loadedSchema, setLoadedSchema] = useState<Record<string, unknown> | null>(null);
-  const [loadedData, setLoadedData] = useState<Record<string, unknown>>({});
-  // 标记是否已加载过 schema，避免重复加载
-  const schemaLoadedRef = useRef(false);
+  const [currentSchema, setCurrentSchema] = useState<Record<string, unknown> | null>(null);
+  const [currentData, setCurrentData] = useState<Record<string, unknown>>({});
+  // 标记当前组件 ID，避免重复加载
+  const currentIdRef = useRef<string | null>(null);
 
-  // 监听 iframe 就绪消息 - 只处理 commId 匹配的消息
+  // 监听 iframe 就绪消息
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      // 只处理来自自己的 iframe 的消息
-      if (event.data?.commId !== commId) return;
-
-      console.log('[AmisChart] Received message for', commId, ':', event.data);
-      if (event.data?.type === 'iframe-ready') {
-        console.log('[AmisChart] iframe is ready for', commId);
+      if (event.data?.type === 'iframe-ready' && event.data?.commId === customComponentId) {
+        console.log('[AmisChart] iframe is ready for', customComponentId);
         setIsReady(true);
-        setIsLoading(false);
-      }
-      if (event.data?.type === 'iframe-error') {
-        setError(event.data?.message || '加载失败');
         setIsLoading(false);
       }
     };
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [commId]);
+  }, [customComponentId]);
 
   // 发送 schema 给 iframe
   const sendToIframe = useCallback((schema: Record<string, unknown> | null, data: Record<string, unknown>) => {
     if (!iframeRef.current?.contentWindow) {
-      console.log('[AmisChart] iframe not ready for', commId, ', retrying...');
+      console.log('[AmisChart] iframe not ready, retrying...');
       setTimeout(() => sendToIframe(schema, data), 50);
       return;
     }
-    console.log('[AmisChart] Sending to iframe', commId, ':', schema?.type, data);
+    console.log('[AmisChart] Sending to iframe:', schema?.type);
     iframeRef.current.contentWindow.postMessage(
-      { type: 'amis-schema-update', schema, data, commId },
+      { type: 'amis-schema-update', schema, data, commId: customComponentId },
       '*'
     );
-  }, [commId]);
+  }, [customComponentId]);
 
-  // 当 iframe 就绪后，如果有已加载的数据就发送
+  // 当 iframe 就绪后，如果有 schema 就发送
   useEffect(() => {
-    if (isReady && loadedSchema && schemaLoadedRef.current) {
-      console.log('[AmisChart] iframe ready, sending loaded schema');
-      sendToIframe(loadedSchema, loadedData);
+    if (isReady && currentSchema) {
+      console.log('[AmisChart] iframe ready, sending schema');
+      sendToIframe(currentSchema, currentData);
     }
-  }, [isReady, loadedSchema, loadedData, sendToIframe]);
+  }, [isReady, currentSchema, currentData, sendToIframe]);
 
   // 直接传入 schema 模式
   useEffect(() => {
     if (directSchema) {
-      console.log('[AmisChart] Direct schema mode:', directSchema);
-      setLoadedSchema(directSchema);
-      setLoadedData(overrides?.exampleData
+      console.log('[AmisChart] Direct schema mode');
+      setCurrentSchema(directSchema);
+      setCurrentData(overrides?.exampleData
         ? { items: overrides.exampleData as Record<string, unknown>[] }
         : {});
       setError(null);
       setIsLoading(false);
-      schemaLoadedRef.current = true;
     }
   }, [directSchema, overrides]);
 
   // 通过 customComponentId 加载 schema
   useEffect(() => {
-    if (directSchema) return; // 直接 schema 模式不加载
+    if (directSchema) return;
     if (!customComponentId) {
       setError('No custom component ID');
       setIsLoading(false);
       return;
     }
 
-    // 避免重复加载
-    if (schemaLoadedRef.current && loadedSchema) {
-      console.log('[AmisChart] Schema already loaded for', customComponentId, ', skipping');
+    // 避免重复加载同一个组件
+    if (currentIdRef.current === customComponentId && currentSchema) {
+      console.log('[AmisChart] Schema already loaded for', customComponentId);
       return;
     }
 
     console.log('[AmisChart] Loading schema for:', customComponentId);
+    currentIdRef.current = customComponentId;
     setIsLoading(true);
     setError(null);
 
     customComponentApi.get(customComponentId)
       .then(async (component) => {
+        // 检查是否仍然是同一个组件
+        if (currentIdRef.current !== customComponentId) {
+          console.log('[AmisChart] Component changed, ignoring response');
+          return;
+        }
+
         try {
           const parsed = JSON.parse(component.json_schema);
           console.log('[AmisChart] Parsed schema:', parsed);
           const finalSchema = parsed.type === 'page' ? parsed : { type: 'page', body: parsed };
-          setLoadedSchema(finalSchema);
-          schemaLoadedRef.current = true;
+          setCurrentSchema(finalSchema);
 
           // 解析数据源配置
           let dataSourceConfig: { sourceType: string; exampleData?: unknown[]; sql?: string } = { sourceType: 'inline' };
@@ -139,13 +134,8 @@ export function AmisChart({ customComponentId, schema: directSchema, overrides, 
             }
           }
 
-          setLoadedData(renderData);
+          setCurrentData(renderData);
           console.log('[AmisChart] Loaded data:', renderData);
-
-          // 如果 iframe 已就绪，立即发送
-          if (isReady) {
-            sendToIframe(finalSchema, renderData);
-          }
         } catch (e) {
           console.error('[AmisChart] Error:', e);
           setError('Invalid JSON schema');
@@ -158,15 +148,7 @@ export function AmisChart({ customComponentId, schema: directSchema, overrides, 
         setError(err.message);
         setIsLoading(false);
       });
-  }, [customComponentId, directSchema, isReady, overrides, sendToIframe, loadedSchema]);
-
-  // 当 schema 或 data 变化时，如果 iframe 已就绪就发送
-  useEffect(() => {
-    if (isReady && loadedSchema && schemaLoadedRef.current) {
-      console.log('[AmisChart] Schema/data changed, sending to iframe');
-      sendToIframe(loadedSchema, loadedData);
-    }
-  }, [loadedSchema, loadedData, isReady, sendToIframe]);
+  }, [customComponentId, directSchema, overrides]);
 
   if (isLoading || loading) {
     return (
@@ -185,7 +167,7 @@ export function AmisChart({ customComponentId, schema: directSchema, overrides, 
   }
 
   // 只有当 customComponentId 存在时才渲染 iframe
-  if (!customComponentId) {
+  if (!customComponentId && !directSchema) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#999' }}>
         未选择组件
@@ -197,7 +179,7 @@ export function AmisChart({ customComponentId, schema: directSchema, overrides, 
     <div className="amis-chart-wrapper" style={{ width: '100%', height: '100%' }}>
       <iframe
         ref={iframeRef}
-        src={`/amis-preview/index.html?commId=${commId}`}
+        src={`/amis-preview/index.html?commId=${customComponentId}`}
         title="Amis Preview"
         style={{ width: '100%', height: '100%', border: 'none' }}
         sandbox="allow-scripts allow-same-origin"
