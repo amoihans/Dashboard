@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 
-// 动态加载 amis SDK
+// 动态加载 amis SDK - 模块级别单例
 let amisPromise: Promise<any> | null = null;
 let amisInstance: any = null;
+let cssLoaded = false;
 
 async function loadAmis(): Promise<any> {
   if (amisInstance) return amisInstance;
@@ -20,24 +21,19 @@ async function loadAmis(): Promise<any> {
     const script = document.createElement('script');
     script.src = 'https://unpkg.com/amis@2.0.0/sdk/sdk.js';
     script.onload = () => {
-      // 检查 CSS 是否已加载
-      const existingCss = document.querySelector('link[href*="amis/sdk.css"]');
-      console.log('[useAmis] Existing CSS:', existingCss);
-
-      if (!existingCss) {
+      // 加载 CSS（只加载一次）
+      if (!cssLoaded) {
         const link = document.createElement('link');
         link.rel = 'stylesheet';
         link.href = 'https://unpkg.com/amis@2.0.0/sdk/sdk.css';
-        link.id = 'amis-sdk-css';
         document.head.appendChild(link);
-        console.log('[useAmis] CSS link added');
+        cssLoaded = true;
       }
 
       // 使用 amisRequire 获取 embed 模块
       const amisRequire = (window as any).amisRequire;
       amisRequire(['amis/embed'], (amis: any) => {
         amisInstance = amis;
-        console.log('[useAmis] amis.embed loaded');
         resolve(amis);
       });
     };
@@ -56,65 +52,63 @@ export interface UseAmisOptions {
 export function useAmis({ schema, data }: UseAmisOptions = {}) {
   const containerRef = useRef<HTMLDivElement>(null);
   const scopedRef = useRef<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // 只在需要时显示 loading
+  const [needsInit, setNeedsInit] = useState(!amisInstance);
+  // 用 instanceId 追踪实例
   const instanceId = useRef(Math.random().toString(36).slice(2, 8));
 
-  // 加载 SDK
+  // 只在首次挂载时加载 SDK，不触发 re-render
   useEffect(() => {
-    console.log('[useAmis] Instance', instanceId.current, 'mounted, schema:', schema?.type);
-    loadAmis()
-      .then(amis => {
-        console.log('[useAmis] Instance', instanceId.current, 'SDK loaded');
-        setIsLoading(false);
-      })
-      .catch(err => {
-        console.error('[useAmis] Instance', instanceId.current, 'SDK load failed:', err);
-        setError('Failed to load Amis SDK');
-        setIsLoading(false);
-      });
+    if (amisInstance) return;
+    setNeedsInit(true);
+    loadAmis().finally(() => setNeedsInit(false));
   }, []);
 
-  // 渲染
+  // 渲染逻辑 - 独立 useEffect，只依赖 schema/data
   useEffect(() => {
-    if (!containerRef.current || !amisInstance || !schema) return;
+    console.log('[useAmis] Instance', instanceId.current, 'effect ran, schema:', schema?.type, 'amisInstance:', !!amisInstance);
 
-    const container = containerRef.current;
-    console.log('[useAmis] Instance', instanceId.current, 'rendering, schema:', schema?.type);
+    if (!containerRef.current || !schema) return;
 
-    try {
-      // 先卸载之前的组件
-      if (scopedRef.current) {
-        try {
-          console.log('[useAmis] Instance', instanceId.current, 'unmounting previous');
-          scopedRef.current.unmount?.();
-        } catch (e) {
-          console.log('[useAmis] Instance', instanceId.current, 'unmount error:', e);
-        }
-        scopedRef.current = null;
+    // 等待 SDK 加载
+    if (!amisInstance) {
+      console.log('[useAmis] Instance', instanceId.current, 'waiting for SDK');
+      const timer = setTimeout(() => {
+        // 重新触发这个 effect
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+
+    console.log('[useAmis] Instance', instanceId.current, 'rendering to container');
+
+    // 卸载旧组件
+    if (scopedRef.current) {
+      try {
+        scopedRef.current.unmount?.();
+      } catch (e) {
+        // ignore
       }
+      scopedRef.current = null;
+    }
 
-      // 清空容器
-      container.innerHTML = '';
-
-      // 渲染新组件
-      const scoped = amisInstance.embed(
-        container,
+    // 清空并渲染
+    containerRef.current.innerHTML = '';
+    try {
+      scopedRef.current = amisInstance.embed(
+        containerRef.current,
         schema as any,
         data as any,
         {
           fetcher: async () => ({ status: 200, headers: {}, data: { status: 200, msg: 'ok', data: {} } } as any),
         }
       );
-      scopedRef.current = scoped;
-      console.log('[useAmis] Instance', instanceId.current, 'rendered successfully');
+      console.log('[useAmis] Instance', instanceId.current, 'rendered OK');
     } catch (e) {
       console.error('[useAmis] Instance', instanceId.current, 'render error:', e);
-      setError((e as Error).message);
     }
   }, [schema, data]);
 
-  // 组件卸载时清理
+  // 清理
   useEffect(() => {
     return () => {
       if (scopedRef.current) {
@@ -129,7 +123,6 @@ export function useAmis({ schema, data }: UseAmisOptions = {}) {
 
   return {
     containerRef,
-    isLoading,
-    error,
+    isLoading: needsInit,
   };
 }
