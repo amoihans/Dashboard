@@ -1,6 +1,7 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { Spin, Alert } from 'antd';
 import { Eye } from 'lucide-react';
+import { useAmis } from '../../hooks/useAmis';
 import './AmisPreview.css';
 
 interface AmisPreviewProps {
@@ -10,46 +11,25 @@ interface AmisPreviewProps {
 }
 
 export function AmisPreview({ schema, data, loading }: AmisPreviewProps) {
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-  const [isReady, setIsReady] = useState(false);
-  const [debugLog, setDebugLog] = useState<string[]>([]);
+  const [isFetching, setIsFetching] = useState(false);
 
-  // 监听 iframe 就绪消息
+  const { containerRef, isLoading, error } = useAmis({
+    schema: schema,
+    data: data,
+  });
+
+  const showLoading = isLoading || loading || isFetching;
+
   useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      console.log('[AmisPreview] Received message:', event.data);
-      if (event.data?.type === 'iframe-ready') {
-        console.log('[AmisPreview] iframe is ready');
-        setIsReady(true);
-      }
-    };
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, []);
-
-  // 向 iframe 发送 schema 更新
-  useEffect(() => {
-    console.log('[AmisPreview] isReady:', isReady, 'schema:', schema ? 'provided' : 'null');
-    if (!isReady || !iframeRef.current?.contentWindow) return;
-
-    console.log('[AmisPreview] Sending schema to iframe');
-    try {
-      iframeRef.current.contentWindow.postMessage(
-        {
-          type: 'amis-schema-update',
-          schema,
-          data,
-        },
-        '*'
-      );
-      console.log('[AmisPreview] Message sent successfully');
-    } catch (e) {
-      console.error('[AmisPreview] Failed to send schema to iframe:', e);
+    if (loading) {
+      setIsFetching(true);
+    } else {
+      setIsFetching(false);
     }
-  }, [isReady, schema, data]);
+  }, [loading]);
 
   const renderContent = () => {
-    if (loading) {
+    if (showLoading) {
       return (
         <div className="preview-loading">
           <Spin />
@@ -71,13 +51,19 @@ export function AmisPreview({ schema, data, loading }: AmisPreviewProps) {
       );
     }
 
+    if (error) {
+      return (
+        <div className="preview-error">
+          <Alert type="error" message="渲染失败" description={error} showIcon />
+        </div>
+      );
+    }
+
     return (
-      <iframe
-        ref={iframeRef}
-        className="amis-iframe"
-        src="/amis-preview/index.html"
-        title="Amis Preview"
-        sandbox="allow-scripts allow-same-origin"
+      <div
+        ref={containerRef}
+        className="amis-preview-container"
+        style={{ width: '100%', height: '100%' }}
       />
     );
   };
@@ -90,7 +76,7 @@ export function AmisPreview({ schema, data, loading }: AmisPreviewProps) {
           <span>实时预览</span>
         </div>
         <span style={{ fontSize: 12, color: '#999' }}>
-          {loading ? '加载中...' : schema ? '已渲染' : '等待生成'}
+          {showLoading ? '加载中...' : schema ? '已渲染' : '等待生成'}
         </span>
       </div>
 
