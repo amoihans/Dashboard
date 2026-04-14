@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Amis Preview</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+    .amis-container { width: 100%; height: 100%; padding: 16px; overflow: auto; background: #fff; }
+    .error-display { padding: 16px; color: #ff4d4f; background: #fff; }
+    .loading { color: #999; text-align: center; padding: 40px; background: #fff; }
+  </style>
+</head>
+<body>
+  <div id="root" class="amis-container">
+    <div class="loading">正在加载渲染引擎...</div>
+  </div>
+
+  <script>
+    console.log('[iframe] Starting...');
+
+    var script = document.createElement('script');
+    script.src = 'https://unpkg.com/amis@2.0.0/sdk/sdk.js';
+    script.onload = function() {
+      console.log('[iframe] Script loaded');
+
+      var root = document.getElementById('root');
+
+      // amis SDK 2.x 使用 AMD require 加载
+      window.amis.require(['react', 'react-dom', 'amis'], function(React, ReactDOM, amis) {
+        console.log('[iframe] Modules loaded');
+        console.log('[iframe] React:', typeof React);
+        console.log('[iframe] amis.render:', typeof amis.render);
+
+        // 直接使用 amis.render，第四个参数是渲染到的 DOM 节点
+        function renderAmis(schema, data) {
+          if (!schema) {
+            root.innerHTML = '<div class="loading">暂无预览内容</div>';
+            return;
+          }
+
+          try {
+            root.innerHTML = '';
+            console.log('[iframe] Rendering...');
+
+            // amis.render(schema, data, options, dom)
+            amis.render(schema, data || {}, {
+              // 禁用默认的 API 请求
+              fetcher: function() {
+                return Promise.resolve({ status: 200, headers: {}, data: {} });
+              }
+            }, root);
+
+            console.log('[iframe] Render called');
+          } catch (e) {
+            console.error('[iframe] Render error:', e);
+            root.innerHTML = '<div class="error-display"><h3>渲染错误</h3><p>' + e.message + '</p></div>';
+          }
+        }
+
+        // 监听消息
+        window.addEventListener('message', function(event) {
+          var msgData = event.data || {};
+          console.log('[iframe] Received message:', msgData.type);
+          if (msgData.type === 'amis-schema-update') {
+            renderAmis(msgData.schema, msgData.data);
+          }
+        });
+
+        // 通知就绪
+        root.innerHTML = '<div class="loading">渲染引擎已就绪</div>';
+        window.parent.postMessage({ type: 'iframe-ready' }, '*');
+
+      }, function(err) {
+        console.error('[iframe] Require error:', err);
+        root.innerHTML = '<div class="error-display"><h3>模块加载失败</h3><p>' + err.message + '</p></div>';
+      });
+
+    };
+    script.onerror = function(e) {
+      console.error('[iframe] Script load error:', e);
+      document.getElementById('root').innerHTML =
+        '<div class="error-display"><h3>加载失败</h3><p>无法加载 amis SDK</p></div>';
+    };
+    document.head.appendChild(script);
+  </script>
+</body>
+</html>
