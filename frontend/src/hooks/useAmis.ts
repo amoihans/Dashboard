@@ -58,16 +58,18 @@ export function useAmis({ schema, data }: UseAmisOptions = {}) {
   const scopedRef = useRef<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const instanceId = useRef(Math.random().toString(36).slice(2, 8));
 
   // 加载 SDK
   useEffect(() => {
+    console.log('[useAmis] Instance', instanceId.current, 'mounted, schema:', schema?.type);
     loadAmis()
       .then(amis => {
-        console.log('[useAmis] SDK loaded');
+        console.log('[useAmis] Instance', instanceId.current, 'SDK loaded');
         setIsLoading(false);
       })
       .catch(err => {
-        console.error('[useAmis] Failed to load SDK:', err);
+        console.error('[useAmis] Instance', instanceId.current, 'SDK load failed:', err);
         setError('Failed to load Amis SDK');
         setIsLoading(false);
       });
@@ -78,16 +80,16 @@ export function useAmis({ schema, data }: UseAmisOptions = {}) {
     if (!containerRef.current || !amisInstance || !schema) return;
 
     const container = containerRef.current;
-    console.log('[useAmis] Rendering to container:', container, 'schema:', schema?.type);
+    console.log('[useAmis] Instance', instanceId.current, 'rendering, schema:', schema?.type);
 
     try {
       // 先卸载之前的组件
       if (scopedRef.current) {
         try {
-          console.log('[useAmis] Unmounting previous component');
+          console.log('[useAmis] Instance', instanceId.current, 'unmounting previous');
           scopedRef.current.unmount?.();
         } catch (e) {
-          console.log('[useAmis] unmount error (ignored):', e);
+          console.log('[useAmis] Instance', instanceId.current, 'unmount error:', e);
         }
         scopedRef.current = null;
       }
@@ -105,9 +107,9 @@ export function useAmis({ schema, data }: UseAmisOptions = {}) {
         }
       );
       scopedRef.current = scoped;
-      console.log('[useAmis] Rendered successfully, scoped:', !!scoped);
+      console.log('[useAmis] Instance', instanceId.current, 'rendered successfully');
     } catch (e) {
-      console.error('[useAmis] Render error:', e);
+      console.error('[useAmis] Instance', instanceId.current, 'render error:', e);
       setError((e as Error).message);
     }
   }, [schema, data]);
