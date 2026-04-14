@@ -43,8 +43,12 @@ export function AmisChart({ customComponentId, schema: directSchema, overrides, 
 
   // 发送 schema 给 iframe
   const sendToIframe = useCallback((schema: Record<string, unknown> | null, data: Record<string, unknown>) => {
-    if (!iframeRef.current?.contentWindow) return;
-    console.log('[AmisChart] Sending to iframe:', { schema: schema ? 'provided' : 'null', data });
+    if (!iframeRef.current?.contentWindow) {
+      console.log('[AmisChart] iframe not ready, retrying...');
+      setTimeout(() => sendToIframe(schema, data), 50);
+      return;
+    }
+    console.log('[AmisChart] Sending to iframe:', schema?.type, data);
     iframeRef.current.contentWindow.postMessage(
       { type: 'amis-schema-update', schema, data },
       '*'
@@ -166,9 +170,13 @@ export function AmisChart({ customComponentId, schema: directSchema, overrides, 
     );
   }
 
+  // 用 customComponentId 作为 key，确保组件切换时 iframe 重新创建
+  const iframeKey = customComponentId || 'default';
+
   return (
     <div className="amis-chart-wrapper" style={{ width: '100%', height: '100%' }}>
       <iframe
+        key={iframeKey}
         ref={iframeRef}
         src="/amis-preview/index.html"
         title="Amis Preview"

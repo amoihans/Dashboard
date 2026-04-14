@@ -1,64 +1,64 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Amis Preview</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { width: 100%; height: 100%; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-    .amis-container { width: 100%; height: 100%; overflow: auto; background: #fff; }
-    .error-display { padding: 16px; color: #ff4d4f; background: #fff; }
-    .loading { color: #999; text-align: center; padding: 40px; background: #fff; }
-  </style>
-  <link rel="stylesheet" href="https://unpkg.com/amis@2.0.0/sdk/sdk.css">
-</head>
-<body>
-  <div id="root" class="amis-container">
-    <div class="loading">正在加载渲染引擎...</div>
-  </div>
-
-  <script>
-    console.log('[iframe] Starting...');
-
-    var script = document.createElement('script');
-    script.src = 'https://unpkg.com/amis@2.0.0/sdk/sdk.js';
-    script.onload = function() {
-      console.log('[iframe] Script loaded');
-
-      var root = document.getElementById('root');
-
-      amisRequire(['react', 'react-dom', 'amis/embed'], function(React, ReactDOM, amis) {
-        console.log('[iframe] Modules loaded');
-
-        function renderAmis(schema, data) {
-          if (!schema) {
-            root.innerHTML = '<div class="loading">暂无预览内容</div>';
-            return;
+<html lang="zh">
+  <head>
+    <meta charset="UTF-8" />
+    <title>amis preview</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="https://unpkg.com/amis@2.0.0/sdk/sdk.css" />
+    <style>
+      html, body, .app-wrapper {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+      .app-wrapper { overflow: auto; }
+    </style>
+  </head>
+  <body>
+    <div id="root" class="app-wrapper"></div>
+    <script src="https://unpkg.com/amis@2.0.0/sdk/sdk.js"></script>
+    <script>
+      (function () {
+        let amis = amisRequire('amis/embed');
+        
+        // 默认 amisJSON（用于初始渲染）
+        let amisJSON = {
+          type: 'page',
+          title: '默认页面',
+          body: {
+            type: 'tpl',
+            tpl: '<div style="padding:20px;color:#999;text-align:center;">暂无预览内容</div>'
           }
-
+        };
+        
+        let amisScoped = null;
+        
+        // 渲染函数
+        function renderAmis(schema, data) {
           try {
-            console.log('[iframe] Rendering...');
-
-            // 清空容器
-            root.innerHTML = '';
-
-            // 使用 amis.embed 渲染
-            // 传入选择器字符串 '#root'
-            amis.embed('#root', schema, data || {}, {
+            let finalSchema = schema || amisJSON;
+            // 确保是 page 类型
+            if (finalSchema.type !== 'page') {
+              finalSchema = { type: 'page', body: finalSchema };
+            }
+            // 渲染到 #root
+            amisScoped = amis.embed('#root', finalSchema, data || {}, {
               fetcher: function() {
                 return Promise.resolve({ status: 200, headers: {}, data: {} });
               }
             });
-
-            console.log('[iframe] Done, innerHTML:', root.innerHTML.substring(0, 200));
           } catch (e) {
             console.error('[iframe] Render error:', e);
-            root.innerHTML = '<div class="error-display"><h3>渲染错误</h3><p>' + e.message + '</p></div>';
+            document.getElementById('root').innerHTML = 
+              '<div style="padding:20px;color:#f00;">渲染错误: ' + e.message + '</div>';
           }
         }
-
+        
+        // 页面加载时渲染默认 JSON
+        renderAmis(amisJSON, {});
+        
+        // 监听 postMessage 动态更新
         window.addEventListener('message', function(event) {
           var msgData = event.data || {};
           if (msgData.type === 'amis-schema-update') {
@@ -66,21 +66,10 @@
             renderAmis(msgData.schema, msgData.data);
           }
         });
-
-        root.innerHTML = '<div class="loading">渲染引擎已就绪</div>';
+        
+        // 通知父页面 iframe 已就绪
         window.parent.postMessage({ type: 'iframe-ready' }, '*');
-
-      }, function(err) {
-        console.error('[iframe] Module load error:', err);
-        root.innerHTML = '<div class="error-display"><h3>模块加载失败</h3></div>';
-      });
-
-    };
-    script.onerror = function(e) {
-      console.error('[iframe] Script load error:', e);
-      document.getElementById('root').innerHTML = '<div class="error-display"><h3>加载失败</h3></div>';
-    };
-    document.head.appendChild(script);
-  </script>
-</body>
+      })();
+    </script>
+  </body>
 </html>
