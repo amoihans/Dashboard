@@ -11,6 +11,7 @@ from sse_starlette.sse import EventSourceResponse
 from pydantic import BaseModel
 
 from app.agent import agent
+from app.agent.component_agent import component_agent
 from app.ai import CCSwitchConfig
 
 router = APIRouter(prefix="/api/agent", tags=["Agent助手"])
@@ -46,11 +47,15 @@ async def chat(request: dict):
             "components": [...],
             "layout": [...],
             "theme": "dark"
+        },
+        "context": {
+            "type": "custom-component-builder"  // 可选，指定 Agent 类型
         }
     }
     """
     message = request.get("message", "")
     state = request.get("state", {})
+    context = request.get("context", {})
 
     if not message:
         raise HTTPException(status_code=400, detail="message 不能为空")
@@ -69,15 +74,27 @@ async def chat(request: dict):
             detail="未检测到有效的 AI Provider 配置，请在 cc-switch 中配置"
         )
 
+    # 根据 context.type 选择 Agent
+    agent_type = context.get("type", "dashboard")
+    history = request.get("history", [])
+
     async def event_generator():
         """生成 SSE 事件流"""
         try:
-            async for event in agent.chat(message, state):
-                # 将事件转换为 SSE 格式
-                yield {
-                    "event": event.get("type", "message"),
-                    "data": json.dumps(event, ensure_ascii=False),
-                }
+            if agent_type == "custom-component-builder":
+                # 使用组件构建 Agent
+                async for event in component_agent.chat(message, history):
+                    yield {
+                        "event": event.get("type", "message"),
+                        "data": json.dumps(event, ensure_ascii=False),
+                    }
+            else:
+                # 使用默认 Dashboard Agent
+                async for event in agent.chat(message, state):
+                    yield {
+                        "event": event.get("type", "message"),
+                        "data": json.dumps(event, ensure_ascii=False),
+                    }
         except Exception as e:
             import traceback
             traceback.print_exc()
@@ -133,5 +150,4 @@ async def build_component(request: BuildComponentRequest):
     except Exception as e:
         import traceback
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
         raise HTTPException(status_code=500, detail=str(e))

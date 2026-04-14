@@ -32,6 +32,7 @@ interface AgentEvent {
   type: 'message' | 'schema' | 'done' | 'error';
   content?: string;
   schema?: string;
+  task_id?: string;
 }
 
 export function useAgentChat(options: UseAgentChatOptions = {}) {
@@ -68,6 +69,9 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
       // 更新对话历史
       const newHistory = [...conversationHistory, { role: 'user' as const, content: trimmedContent }];
 
+      let schemaContent = '';
+      let fullContent = '';
+
       try {
         // 调用后端 Agent API (SSE 流式)
         const response = await fetch('http://localhost:8000/api/agent/chat', {
@@ -78,7 +82,6 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
             history: conversationHistory,
             context: {
               type: 'custom-component-builder',
-              currentSchema: options.onSchemaGenerated ? 'has-schema' : 'no-schema',
             },
           }),
         });
@@ -93,8 +96,6 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
 
         const decoder = new TextDecoder();
         let buffer = '';
-        let fullContent = '';
-        let schemaContent = '';
 
         while (true) {
           const { done, value } = await reader.read();
@@ -129,11 +130,15 @@ export function useAgentChat(options: UseAgentChatOptions = {}) {
                   });
                 } else if (event.type === 'schema' && event.schema) {
                   schemaContent = event.schema;
+                  // 立即调用回调，让预览实时更新
+                  options.onSchemaGenerated?.(schemaContent);
                 } else if (event.type === 'done') {
                   // 更新对话历史
                   setConversationHistory([...newHistory, { role: 'assistant', content: fullContent }]);
-                  // 如果有 schema，更新它
-                  if (schemaContent) {
+                  // 如果之前没有通过 schema 事件发送，这里再发一次
+                  if (schemaContent && !schemaContent.includes('${')) {
+                    // schema was already sent via schema event
+                  } else if (schemaContent) {
                     options.onSchemaGenerated?.(schemaContent);
                   }
                 } else if (event.type === 'error') {

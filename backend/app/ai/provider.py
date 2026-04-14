@@ -39,7 +39,7 @@ class AnthropicFormatProvider(AIProvider):
             base += "/v1"
         return f"{base}/messages"
 
-    async def chat(self, messages: list[dict], model: str = None) -> str:
+    async def chat(self, messages: list[dict], model: str = None, retry_count: int = 3) -> str:
         model = model or self.model or "claude-3-5-haiku-20240307"
 
         headers = {
@@ -61,31 +61,56 @@ class AnthropicFormatProvider(AIProvider):
             "messages": anthropic_messages
         }
 
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                self._get_api_url(),
-                json=payload,
-                headers=headers,
-                timeout=120.0
-            )
-            response.raise_for_status()
-            data = response.json()
+        last_error = None
+        for attempt in range(retry_count):
+            try:
+                async with httpx.AsyncClient() as client:
+                    response = await client.post(
+                        self._get_api_url(),
+                        json=payload,
+                        headers=headers,
+                        timeout=120.0
+                    )
+                    response.raise_for_status()
+                    data = response.json()
 
-            # 解析响应
-            if "content" in data:
-                content = data["content"]
-                if isinstance(content, list):
-                    for item in content:
-                        if isinstance(item, dict) and "text" in item:
-                            return item["text"]
-                    return str(content)
-                elif isinstance(content, str):
-                    return content
+                    # 解析响应
+                    if "content" in data:
+                        content = data["content"]
+                        if isinstance(content, list):
+                            for item in content:
+                                if isinstance(item, dict) and "text" in item:
+                                    return item["text"]
+                            return str(content)
+                        elif isinstance(content, str):
+                            return content
 
-            if "text" in data:
-                return data["text"]
+                    if "text" in data:
+                        return data["text"]
 
-            return str(data)
+                    return str(data)
+
+            except httpx.HTTPStatusError as e:
+                last_error = e
+                # 如果是 529 或其他服务器错误，等待后重试
+                if e.response.status_code >= 500 and attempt < retry_count - 1:
+                    import asyncio
+                    wait_time = (attempt + 1) * 2  # 指数退避: 2s, 4s, 6s
+                    print(f"[AIProvider] Server error {e.response.status_code}, retrying in {wait_time}s... (attempt {attempt + 1}/{retry_count})")
+                    await asyncio.sleep(wait_time)
+                    continue
+                raise
+            except Exception as e:
+                last_error = e
+                if attempt < retry_count - 1:
+                    import asyncio
+                    wait_time = (attempt + 1) * 2
+                    print(f"[AIProvider] Error: {e}, retrying in {wait_time}s... (attempt {attempt + 1}/{retry_count})")
+                    await asyncio.sleep(wait_time)
+                    continue
+                raise
+
+        raise last_error or Exception("AI chat failed after retries")
 
     async def chat_stream(self, messages: list[dict], model: str = None) -> AsyncGenerator[str, None]:
         model = model or self.model or "claude-3-5-haiku-20240307"
