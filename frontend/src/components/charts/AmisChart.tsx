@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, memo } from 'react';
 import { Spin, Alert } from 'antd';
 import { customComponentApi } from '../../services/api';
 import { useAmis } from '../../hooks/useAmis';
@@ -16,13 +16,14 @@ interface Props {
 }
 
 // 直接使用 amis SDK 渲染（不用 iframe）
-export function AmisChart({ customComponentId, schema: directSchema, overrides, loading }: Props) {
+export const AmisChart = memo(function AmisChart({ customComponentId, schema: directSchema, overrides, loading }: Props) {
   const [currentSchema, setCurrentSchema] = useState<Record<string, unknown> | null>(null);
   const [currentData, setCurrentData] = useState<Record<string, unknown>>({});
   const [isFetching, setIsFetching] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const currentIdRef = useRef<string | null>(null);
 
-  const { containerRef, isLoading, error } = useAmis({
+  const { containerRef, isLoading } = useAmis({
     schema: currentSchema,
     data: currentData,
   });
@@ -35,6 +36,7 @@ export function AmisChart({ customComponentId, schema: directSchema, overrides, 
       setCurrentData(overrides?.exampleData
         ? { items: overrides.exampleData as Record<string, unknown>[] }
         : {});
+      setError(null);
     }
   }, [directSchema, overrides]);
 
@@ -49,6 +51,7 @@ export function AmisChart({ customComponentId, schema: directSchema, overrides, 
     console.log('[AmisChart] Loading schema for:', customComponentId);
     currentIdRef.current = customComponentId;
     setIsFetching(true);
+    setError(null);
 
     customComponentApi.get(customComponentId)
       .then(async (component) => {
@@ -95,12 +98,14 @@ export function AmisChart({ customComponentId, schema: directSchema, overrides, 
           console.log('[AmisChart] Loaded data:', renderData);
         } catch (e) {
           console.error('[AmisChart] Error:', e);
+          setError('Invalid JSON schema');
         } finally {
           setIsFetching(false);
         }
       })
       .catch(err => {
         console.error('[AmisChart] Fetch error:', err);
+        setError(err.message);
         setIsFetching(false);
       });
   }, [customComponentId, directSchema, overrides]);
@@ -138,4 +143,4 @@ export function AmisChart({ customComponentId, schema: directSchema, overrides, 
       style={{ width: '100%', height: '100%', overflow: 'auto' }}
     />
   );
-}
+});
