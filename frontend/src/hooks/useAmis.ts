@@ -64,19 +64,31 @@ export function useAmis({ schema, data }: UseAmisOptions = {}) {
     loadAmis().finally(() => setNeedsInit(false));
   }, []);
 
-  // 渲染逻辑 - 独立 useEffect，只依赖 schema/data
+  // 渲染逻辑 - 用 ref 追踪是否真的需要重新渲染
+  const lastRendered = useRef<{ schema: any; data: any } | null>(null);
+
   useEffect(() => {
-    console.log('[useAmis] Instance', instanceId.current, 'effect ran, schema:', schema?.type, 'amisInstance:', !!amisInstance);
+    console.log('[useAmis] Instance', instanceId.current, 'effect ran, schema:', schema?.type);
+
+    // 检查是否真的需要重新渲染
+    const schemaChanged = !lastRendered.current ||
+      JSON.stringify(lastRendered.current.schema) !== JSON.stringify(schema);
+    const dataChanged = !lastRendered.current ||
+      JSON.stringify(lastRendered.current.data) !== JSON.stringify(data);
+
+    if (!schemaChanged && !dataChanged) {
+      console.log('[useAmis] Instance', instanceId.current, 'skipping render, no change');
+      return;
+    }
+
+    console.log('[useAmis] Instance', instanceId.current, 'schema changed:', schemaChanged, 'data changed:', dataChanged);
 
     if (!containerRef.current || !schema) return;
 
     // 等待 SDK 加载
     if (!amisInstance) {
       console.log('[useAmis] Instance', instanceId.current, 'waiting for SDK');
-      const timer = setTimeout(() => {
-        // 重新触发这个 effect
-      }, 100);
-      return () => clearTimeout(timer);
+      return;
     }
 
     console.log('[useAmis] Instance', instanceId.current, 'rendering to container');
@@ -102,6 +114,7 @@ export function useAmis({ schema, data }: UseAmisOptions = {}) {
           fetcher: async () => ({ status: 200, headers: {}, data: { status: 200, msg: 'ok', data: {} } } as any),
         }
       );
+      lastRendered.current = { schema, data };
       console.log('[useAmis] Instance', instanceId.current, 'rendered OK');
     } catch (e) {
       console.error('[useAmis] Instance', instanceId.current, 'render error:', e);
