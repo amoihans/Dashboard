@@ -20,18 +20,24 @@ async function loadAmis(): Promise<any> {
     const script = document.createElement('script');
     script.src = 'https://unpkg.com/amis@2.0.0/sdk/sdk.js';
     script.onload = () => {
-      // 加载 CSS（如果还没加载）
-      if (!document.querySelector('link[href*="amis"]')) {
+      // 检查 CSS 是否已加载
+      const existingCss = document.querySelector('link[href*="amis/sdk.css"]');
+      console.log('[useAmis] Existing CSS:', existingCss);
+
+      if (!existingCss) {
         const link = document.createElement('link');
         link.rel = 'stylesheet';
         link.href = 'https://unpkg.com/amis@2.0.0/sdk/sdk.css';
+        link.id = 'amis-sdk-css';
         document.head.appendChild(link);
+        console.log('[useAmis] CSS link added');
       }
 
       // 使用 amisRequire 获取 embed 模块
       const amisRequire = (window as any).amisRequire;
       amisRequire(['amis/embed'], (amis: any) => {
         amisInstance = amis;
+        console.log('[useAmis] amis.embed loaded');
         resolve(amis);
       });
     };
@@ -71,28 +77,35 @@ export function useAmis({ schema, data }: UseAmisOptions = {}) {
   useEffect(() => {
     if (!containerRef.current || !amisInstance || !schema) return;
 
+    const container = containerRef.current;
+    console.log('[useAmis] Rendering to container:', container, 'schema:', schema?.type);
+
     try {
       // 先卸载之前的组件
       if (scopedRef.current) {
         try {
+          console.log('[useAmis] Unmounting previous component');
           scopedRef.current.unmount?.();
         } catch (e) {
-          // ignore unmount error
+          console.log('[useAmis] unmount error (ignored):', e);
         }
+        scopedRef.current = null;
       }
 
       // 清空容器
-      containerRef.current.innerHTML = '';
+      container.innerHTML = '';
 
       // 渲染新组件
-      scopedRef.current = amisInstance.embed(
-        containerRef.current,
+      const scoped = amisInstance.embed(
+        container,
         schema as any,
         data as any,
         {
           fetcher: async () => ({ status: 200, headers: {}, data: { status: 200, msg: 'ok', data: {} } } as any),
         }
       );
+      scopedRef.current = scoped;
+      console.log('[useAmis] Rendered successfully, scoped:', !!scoped);
     } catch (e) {
       console.error('[useAmis] Render error:', e);
       setError((e as Error).message);
