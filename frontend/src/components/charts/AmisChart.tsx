@@ -17,18 +17,23 @@ interface Props {
 // 用于大屏编辑页面的 iframe 渲染版本
 export function AmisChart({ customComponentId, schema: directSchema, overrides, loading }: Props) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  // 使用 commId 区分不同的 iframe 实例
+  const commId = customComponentId || 'default';
   const [isReady, setIsReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadedSchema, setLoadedSchema] = useState<Record<string, unknown> | null>(null);
   const [loadedData, setLoadedData] = useState<Record<string, unknown>>({});
 
-  // 监听 iframe 就绪消息
+  // 监听 iframe 就绪消息 - 只处理 commId 匹配的消息
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      console.log('[AmisChart] Received message:', event.data);
+      // 只处理来自自己的 iframe 的消息
+      if (event.data?.commId !== commId) return;
+
+      console.log('[AmisChart] Received message for', commId, ':', event.data);
       if (event.data?.type === 'iframe-ready') {
-        console.log('[AmisChart] iframe is ready');
+        console.log('[AmisChart] iframe is ready for', commId);
         setIsReady(true);
         setIsLoading(false);
       }
@@ -39,21 +44,21 @@ export function AmisChart({ customComponentId, schema: directSchema, overrides, 
     };
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, []);
+  }, [commId]);
 
   // 发送 schema 给 iframe
   const sendToIframe = useCallback((schema: Record<string, unknown> | null, data: Record<string, unknown>) => {
     if (!iframeRef.current?.contentWindow) {
-      console.log('[AmisChart] iframe not ready, retrying...');
+      console.log('[AmisChart] iframe not ready for', commId, ', retrying...');
       setTimeout(() => sendToIframe(schema, data), 50);
       return;
     }
-    console.log('[AmisChart] Sending to iframe:', schema?.type, data);
+    console.log('[AmisChart] Sending to iframe', commId, ':', schema?.type, data);
     iframeRef.current.contentWindow.postMessage(
-      { type: 'amis-schema-update', schema, data },
+      { type: 'amis-schema-update', schema, data, commId },
       '*'
     );
-  }, []);
+  }, [commId]);
 
   // 当 iframe 就绪后，如果有已加载的数据就发送
   useEffect(() => {
@@ -170,15 +175,11 @@ export function AmisChart({ customComponentId, schema: directSchema, overrides, 
     );
   }
 
-  // 用 customComponentId 作为 key，确保组件切换时 iframe 重新创建
-  const iframeKey = customComponentId || 'default';
-
   return (
     <div className="amis-chart-wrapper" style={{ width: '100%', height: '100%' }}>
       <iframe
-        key={iframeKey}
         ref={iframeRef}
-        src="/amis-preview/index.html"
+        src={`/amis-preview/index.html?commId=${commId}`}
         title="Amis Preview"
         style={{ width: '100%', height: '100%', border: 'none' }}
         sandbox="allow-scripts allow-same-origin"

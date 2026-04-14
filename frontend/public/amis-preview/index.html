@@ -21,7 +21,11 @@
     <script>
       (function () {
         let amis = amisRequire('amis/embed');
-        
+
+        // 从 URL 获取 commId，用于区分不同的 iframe 实例
+        const urlParams = new URLSearchParams(window.location.search);
+        const commId = urlParams.get('commId') || 'default';
+
         // 默认 amisJSON（用于初始渲染）
         let amisJSON = {
           type: 'page',
@@ -31,9 +35,9 @@
             tpl: '<div style="padding:20px;color:#999;text-align:center;">暂无预览内容</div>'
           }
         };
-        
+
         let amisScoped = null;
-        
+
         // 渲染函数
         function renderAmis(schema, data) {
           try {
@@ -50,25 +54,26 @@
             });
           } catch (e) {
             console.error('[iframe] Render error:', e);
-            document.getElementById('root').innerHTML = 
+            document.getElementById('root').innerHTML =
               '<div style="padding:20px;color:#f00;">渲染错误: ' + e.message + '</div>';
           }
         }
-        
+
         // 页面加载时渲染默认 JSON
         renderAmis(amisJSON, {});
-        
-        // 监听 postMessage 动态更新
+
+        // 监听 postMessage 动态更新 - 只处理 commId 匹配的消息
         window.addEventListener('message', function(event) {
           var msgData = event.data || {};
-          if (msgData.type === 'amis-schema-update') {
-            console.log('[iframe] Received schema update');
+          // 检查 commId 是否匹配
+          if (msgData.type === 'amis-schema-update' && msgData.commId === commId) {
+            console.log('[iframe] Received schema update for', commId);
             renderAmis(msgData.schema, msgData.data);
           }
         });
-        
-        // 通知父页面 iframe 已就绪
-        window.parent.postMessage({ type: 'iframe-ready' }, '*');
+
+        // 通知父页面 iframe 已就绪，携带 commId
+        window.parent.postMessage({ type: 'iframe-ready', commId: commId }, '*');
       })();
     </script>
   </body>
