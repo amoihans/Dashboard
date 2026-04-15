@@ -28,6 +28,7 @@ DEFAULT_SQL = {
     "candlestick": "SELECT trade_date as date, open_price as open, close_price as close, high_price as high, low_price as low FROM stock_price ORDER BY trade_date",
     "number": "SELECT value FROM kpi_metrics WHERE metric_name='全年营收'",
     "table": "SELECT department, employee_count, avg_salary, total_salary FROM department_stats",
+    "custom": "",
 }
 
 DEFAULT_TITLES = {
@@ -38,6 +39,7 @@ DEFAULT_TITLES = {
     "candlestick": "K线图",
     "number": "数字卡片",
     "table": "表格",
+    "custom": "自定义组件",
 }
 
 
@@ -132,6 +134,18 @@ class AddComponentOperation(AtomicOperation):
             "refreshInterval": 0,
         }
 
+        # 处理自定义组件
+        if comp_type == "custom":
+            custom_component_id = params.get("customComponentId")
+            custom_component_name = params.get("customComponentName")
+            new_component["customComponentId"] = custom_component_id
+            new_component["customComponentName"] = custom_component_name or "自定义组件"
+            # 自定义组件的数据源类型改为 inline
+            new_component["dataSource"] = {"sourceType": "inline"}
+            # 如果有自定义覆盖配置
+            if params.get("customOverrides"):
+                new_component["customOverrides"] = params.get("customOverrides")
+
         new_components = state.get("components", []) + [new_component]
         new_layout = state.get("layout", []) + [layout_item]
 
@@ -224,6 +238,8 @@ class UpdateComponentOperation(AtomicOperation):
             old_comp["dataSource"] = {**old_comp.get("dataSource", {}), **updates["dataSource"]}
         if "chartConfig" in updates:
             old_comp["chartConfig"] = {**old_comp.get("chartConfig", {}), **updates["chartConfig"]}
+        if "customOverrides" in updates:
+            old_comp["customOverrides"] = {**old_comp.get("customOverrides", {}), **updates["customOverrides"]}
 
         new_state = {
             **state,

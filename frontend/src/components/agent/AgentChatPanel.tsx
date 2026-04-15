@@ -3,6 +3,7 @@ import { Button, Input } from 'antd';
 import { Send, X, Minimize2, Maximize2, Bot, User, Loader } from 'lucide-react';
 import type { ComponentConfig, LayoutItem, ThemeType } from '../../types';
 import { useDashboardStore } from '../../stores/dashboardStore';
+import { customComponentApi } from '../../services/api';
 import './AgentChatPanel.css';
 
 const { TextArea } = Input;
@@ -98,11 +99,25 @@ export function AgentChatPanel({ visible, onClose }: Props) {
     setInput('');
     setExecuting(true);
 
+    // 先获取自定义组件列表
+    let customComponentsList: Array<{ id: string; name: string; description?: string }> = [];
+    try {
+      const customComponents = await customComponentApi.list(1);
+      customComponentsList = customComponents.map(c => ({
+        id: c.id,
+        name: c.name,
+        description: c.description,
+      }));
+    } catch (e) {
+      console.error('[AgentChatPanel] Failed to fetch custom components:', e);
+    }
+
     // 构建当前状态
     const state = {
       components: useDashboardStore.getState().components,
       layout: useDashboardStore.getState().layout,
       theme: currentDashboard?.theme || 'light',
+      customComponents: customComponentsList,
     };
 
     try {

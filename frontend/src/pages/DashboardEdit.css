@@ -95,6 +95,30 @@
   flex: 1;
 }
 
+.component-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.edit-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #999;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+
+.edit-btn:hover {
+  color: #1890ff;
+  background: rgba(24, 144, 255, 0.1);
+}
+
 .delete-btn {
   display: flex;
   align-items: center;

@@ -28,13 +28,13 @@ AGENT_SYSTEM_PROMPT = """你是一个专业的大屏配置助手。你的任务�
 ## 可用原子操作
 
 1. ADD_COMPONENT - 添加新组件到画布
-   参数: type, position{x,y}, size{w,h}, dataSource{sourceType,sql}, title
+   参数: type, position{x,y}, size{w,h}, dataSource{sourceType,sql}, title, customComponentId, customComponentName
 
 2. REMOVE_COMPONENT - 删除组件
    参数: componentId
 
 3. UPDATE_COMPONENT - 更新组件属性
-   参数: componentId, updates{title,dataSource,chartConfig}
+   参数: componentId, updates{title,dataSource,chartConfig,customOverrides}
 
 4. MOVE_COMPONENT - 移动组件位置
    参数: componentId, position{x,y}
@@ -53,6 +53,13 @@ AGENT_SYSTEM_PROMPT = """你是一个专业的大屏配置助手。你的任务�
 - K线图 → candlestick
 - 数字卡片 → number
 - 表格 → table
+- 自定义组件/卡片 → custom
+
+## 自定义组件支持
+自定义组件通过 `customComponentId` 和 `customComponentName` 参数添加：
+- 添加自定义组件：`ADD_COMPONENT` 的 type 为 "custom"，并提供 `customComponentId` 或 `customComponentName`
+- 引用组件：可以使用组件的 title（标题）来引用组件，比如 "删除左上角的销售图表"
+- 组件名称唯一性：每个组件都有唯一的 title，可以通过 title 来定位组件
 
 ## 数据源类型
 - finance-sql: 财经模拟数据（默认）
@@ -70,7 +77,10 @@ AGENT_SYSTEM_PROMPT = """你是一个专业的大屏配置助手。你的任务�
 - table: SELECT department, employee_count, avg_salary, total_salary FROM department_stats
 
 ## 上下文记忆
-当前画布状态会通过变量提供，你可以根据组件 ID 或描述来引用组件。
+当前画布状态会通过变量提供，你可以根据组件的 title（标题）来引用组件。例如：
+- "删除销售图表" → 查找 title 包含 "销售" 的组件
+- "移动左上角的卡片" → 查找位置和标题匹配的组件
+- "更新折线图的数据源" → 查找 type 为 "line" 且 title 包含 "折线" 的组件
 
 ## 输出格式
 必须以 JSON 数组格式输出操作列表，每项包含：
@@ -88,6 +98,9 @@ ANALYSIS_PROMPT = """分析以下用户需求，分解为原子操作：
 
 当前画布状态：
 {canvas_context}
+
+自定义组件库（可用名称）：
+{custom_components}
 
 请分析用户需求，输出操作列表 JSON：
 """
@@ -129,7 +142,8 @@ def parse_llm_operations(response: str) -> list[dict]:
 async def generate_operations(
     user_request: str,
     canvas_context: str,
-    llm_provider
+    llm_provider,
+    custom_components: list = None
 ) -> list[dict]:
     """
     调用 LLM 生成操作列表
@@ -138,15 +152,23 @@ async def generate_operations(
         user_request: 用户自然语言输入
         canvas_context: 当前画布状态描述
         llm_provider: AI provider 实例
+        custom_components: 自定义组件列表 [{id, name, description}]
 
     Returns:
         操作列表
     """
+    # 构建自定义组件列表字符串
+    custom_components_str = ""
+    if custom_components:
+        for c in custom_components:
+            custom_components_str += f"- {c.get('name', '未命名')}: ID={c.get('id')}, 描述={c.get('description', '无')}\n"
+
     messages = [
         {"role": "system", "content": AGENT_SYSTEM_PROMPT},
         {"role": "user", "content": ANALYSIS_PROMPT.format(
             user_request=user_request,
-            canvas_context=canvas_context or "（空画布）"
+            canvas_context=canvas_context or "（空画布）",
+            custom_components=custom_components_str or "（无自定义组件）"
         )},
     ]
 
@@ -229,10 +251,12 @@ class DashboardAgent:
         try:
             # 4. 调用 LLM 生成操作
             provider = self._get_provider()
+            custom_components = initial_state.get("customComponents", [])
             operations = await generate_operations(
                 user_message,
                 canvas_context,
-                provider
+                provider,
+                custom_components
             )
 
             if not operations:

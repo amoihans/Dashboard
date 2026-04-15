@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { LayoutGrid, Trash2, Eye, Save, Send, Bot } from 'lucide-react';
+import { LayoutGrid, Trash2, Eye, Save, Send, Bot, Edit } from 'lucide-react';
 import GridLayout from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
@@ -127,6 +127,18 @@ export function DashboardEdit() {
 
   const handleDelete = (compId: string) => {
     removeComponent(compId);
+  };
+
+  // 编辑自定义组件
+  const handleEditCustomComponent = (compId: string, customComponentId?: string) => {
+    if (!customComponentId) return;
+    // 跳转到构建页面，并传递自定义组件 ID 和来源大屏 ID
+    const params = new URLSearchParams();
+    params.append('id', customComponentId);
+    if (!isNew && id) {
+      params.append('fromDashboard', id);
+    }
+    navigate(`/custom-component/builder?${params.toString()}`);
   };
 
   const handlePaletteDragStart = (type: ComponentConfig['type'], customComponentId?: string) => {
@@ -284,16 +296,32 @@ export function DashboardEdit() {
                   style={{ cursor: 'move', background: themeColors.card, borderColor: themeColors.border }}
                 >
                   <span className="component-title" style={{ color: themeColors.text }}>{comp.title}</span>
-                  <span
-                    className="delete-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDelete(comp.id);
-                    }}
-                    onMouseDown={(e) => e.stopPropagation()}
-                  >
-                    <Trash2 size={14} />
-                  </span>
+                  <div className="component-actions">
+                    {comp.type === 'custom' && comp.customComponentId && (
+                      <span
+                        className="edit-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEditCustomComponent(comp.id, comp.customComponentId);
+                        }}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        title="编辑自定义组件"
+                      >
+                        <Edit size={14} />
+                      </span>
+                    )}
+                    <span
+                      className="delete-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(comp.id);
+                      }}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      title="删除组件"
+                    >
+                      <Trash2 size={14} />
+                    </span>
+                  </div>
                 </div>
                 <div className="component-body">
                   <ChartRenderer config={comp} data={componentData[comp.id] || []} loading={dataLoading} />

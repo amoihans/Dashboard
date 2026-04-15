@@ -204,6 +204,9 @@ class MemoryManager:
             "k线": "candlestick",
             "数字卡片": "number",
             "表格": "table",
+            "自定义组件": "custom",
+            "卡片": "custom",
+            "自定义": "custom",
         }
 
         # 查找匹配的类型
@@ -222,6 +225,32 @@ class MemoryManager:
                     match = re.search(r"ID: (\w+)", line)
                     if match:
                         return {"componentId": match.group(1), "source": "canvas_context"}
+
+        # 按标题查找：提取标题关键词
+        # 查找包含"删除"、"移动"、"更新"等动词后的名词短语
+        # 例如："删除销售图表" → 查找标题包含"销售"的组件
+        # 例如："移动左边的卡片" → 查找标题包含"卡片"的组件
+
+        # 移除常见动词和位置词
+        stop_words = ["删除", "移动", "更新", "调整", "改变", "修改", "添加", "左上角", "右上角", "中间", "左边", "右边", "上面", "下面", "那个", "这个", "这个", "的"]
+        clean_msg = user_msg_lower
+        for word in stop_words:
+            clean_msg = clean_msg.replace(word, "")
+
+        clean_msg = clean_msg.strip()
+        if len(clean_msg) > 1:  # 有实际关键词
+            # 查找标题包含关键词的组件
+            lines = canvas_ctx.split("\n")
+            for line in lines:
+                # 从canvas_context中提取标题：标题: xxxx
+                title_match = re.search(r"标题: (.+?)(?= -|$)", line)
+                if title_match:
+                    title = title_match.group(1).lower()
+                    if clean_msg in title:
+                        # 提取 ID
+                        id_match = re.search(r"ID: (\w+)", line)
+                        if id_match:
+                            return {"componentId": id_match.group(1), "source": "title_match", "matched_keyword": clean_msg}
 
         # 处理序数词
         if "第一个" in user_msg_lower:

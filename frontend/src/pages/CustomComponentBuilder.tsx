@@ -13,6 +13,7 @@ export function CustomComponentBuilder() {
   const [searchParams] = useSearchParams();
   const { createComponent, getComponent, updateComponent, fetchComponents } = useCustomComponentStore();
   const editId = searchParams.get('id');
+  const fromDashboard = searchParams.get('fromDashboard');
 
   // 组件信息
   const [name, setName] = useState('未命名组件');
@@ -160,7 +161,15 @@ export function CustomComponentBuilder() {
         });
         message.success('组件已保存');
       }
-      navigate('/dashboard/new/edit');
+
+      // 保存后返回逻辑
+      if (fromDashboard) {
+        // 返回来源大屏的编辑页面
+        navigate(`/dashboard/${fromDashboard}/edit`);
+      } else {
+        // 返回新建大屏页面
+        navigate('/dashboard/new/edit');
+      }
     } catch (e) {
       message.error((e as Error).message || '保存失败');
     }
