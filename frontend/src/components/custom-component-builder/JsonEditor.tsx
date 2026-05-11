@@ -1,6 +1,7 @@
 import { Button, Alert } from 'antd';
 import { Code, Wand2 } from 'lucide-react';
 import { useSchemaValidation } from './hooks';
+import { MonacoEditor } from '../MonacoEditor';
 import './JsonEditor.css';
 
 interface JsonEditorProps {
@@ -15,10 +16,6 @@ export function JsonEditor({ value, onChange }: JsonEditorProps) {
     if (parsedSchema) {
       onChange(JSON.stringify(parsedSchema, null, 2));
     }
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    onChange(e.target.value);
   };
 
   return (
@@ -39,12 +36,11 @@ export function JsonEditor({ value, onChange }: JsonEditorProps) {
       </div>
 
       <div className="json-editor-content">
-        <textarea
-          className="json-textarea"
+        <MonacoEditor
           value={value}
-          onChange={handleChange}
-          spellCheck={false}
-          placeholder="输入 amis JSON 配置..."
+          onChange={onChange}
+          language="json"
+          height="100%"
         />
         {error && (
           <div className="json-editor-error">

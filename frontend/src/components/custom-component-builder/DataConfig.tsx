@@ -1,5 +1,7 @@
-import { Button, Switch, Alert } from 'antd';
+import { Button, Alert } from 'antd';
 import { Play, Database } from 'lucide-react';
+import { useState } from 'react';
+import { MonacoEditor } from '../MonacoEditor';
 import './DataConfig.css';
 
 type SourceType = 'inline' | 'sql';
@@ -35,9 +37,15 @@ export function DataConfig({
   onSqlChange,
   onTestSql,
 }: DataConfigProps) {
-  const handleExampleDataChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const [localExampleData, setLocalExampleData] = useState(
+    JSON.stringify(exampleData.length > 0 ? exampleData : DEFAULT_EXAMPLE_DATA, null, 2)
+  );
+  const [localSql, setLocalSql] = useState(sql);
+
+  const handleExampleDataChange = (value: string) => {
+    setLocalExampleData(value);
     try {
-      const parsed = JSON.parse(e.target.value);
+      const parsed = JSON.parse(value);
       if (Array.isArray(parsed)) {
         onExampleDataChange(parsed);
       }
@@ -45,8 +53,6 @@ export function DataConfig({
       // ignore parse errors while typing
     }
   };
-
-  const exampleDataText = JSON.stringify(exampleData.length > 0 ? exampleData : DEFAULT_EXAMPLE_DATA, null, 2);
 
   return (
     <div className="data-config">
@@ -57,12 +63,13 @@ export function DataConfig({
         </div>
         <div className="source-type-toggle">
           <span className={sourceType === 'inline' ? 'active' : ''}>Example</span>
-          <Switch
+          <Button
             size="small"
-            checked={sourceType === 'sql'}
-            onChange={(checked) => onSourceTypeChange(checked ? 'sql' : 'inline')}
-          />
-          <span className={sourceType === 'sql' ? 'active' : ''}>SQL</span>
+            type={sourceType === 'sql' ? 'primary' : 'default'}
+            onClick={() => onSourceTypeChange(sourceType === 'inline' ? 'sql' : 'inline')}
+          >
+            {sourceType === 'inline' ? '切换 SQL' : '切换 Example'}
+          </Button>
         </div>
       </div>
 
@@ -70,22 +77,24 @@ export function DataConfig({
         {sourceType === 'inline' ? (
           <div className="example-data-editor">
             <div className="data-editor-hint">修改 Example 数据，预览将实时更新</div>
-            <textarea
-              className="data-editor-textarea"
-              value={exampleDataText}
+            <MonacoEditor
+              value={localExampleData}
               onChange={handleExampleDataChange}
-              spellCheck={false}
+              language="json"
+              height={120}
             />
           </div>
         ) : (
           <div className="sql-editor">
             <div className="data-editor-hint">输入 SQL 查询，预览将执行查询并显示结果</div>
-            <textarea
-              className="data-editor-textarea"
-              value={sql}
-              onChange={(e) => onSqlChange(e.target.value)}
-              placeholder="SELECT name, value FROM ..."
-              spellCheck={false}
+            <MonacoEditor
+              value={localSql}
+              onChange={(value) => {
+                setLocalSql(value);
+                onSqlChange(value);
+              }}
+              language="sql"
+              height={120}
             />
             <Button
               icon={<Play size={14} />}

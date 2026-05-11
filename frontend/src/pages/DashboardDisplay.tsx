@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import GridLayout from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
-import 'react-resizable/css/styles.css';
 import { dashboardApi } from '../services/api';
 import { ChartRenderer } from '../components/charts';
 import { THEME_COLORS, type ThemeType, type ComponentConfig, type LayoutItem } from '../types';

@@ -49,19 +49,5 @@
 }
 
 .data-editor-textarea {
-  width: 100%;
-  min-height: 80px;
-  padding: 8px;
-  border: 1px solid #d9d9d9;
-  border-radius: 4px;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-  font-size: 12px;
-  resize: vertical;
-  background: #1e1e1e;
-  color: #d4d4d4;
-}
-
-.data-editor-textarea:focus {
-  outline: none;
-  border-color: #40a9ff;
+  min-height: 120px;
 }

@@ -5,6 +5,7 @@
 ## 项目简介
 
 支持三种数据源：
+
 - **SQL 查询** - 直连数据库执行 SELECT 查询
 - **数据集** - 预定义的数据查询模板
 - **API** - 第三方 HTTP API 数据源
@@ -76,8 +77,9 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 后端启动后访问：
-- API 文档: http://localhost:8000/api/docs
-- 健康检查: http://localhost:8000/api/health
+
+- API 文档: <http://localhost:8000/api/docs>
+- 健康检查: <http://localhost:8000/api/health>
 
 ### 2. 前端启动
 
@@ -91,7 +93,7 @@ npm install
 npm run dev
 ```
 
-前端启动后访问：http://localhost:5173
+前端启动后访问：<http://localhost:5173>
 
 ## 主要页面
 
@@ -107,7 +109,7 @@ npm run dev
 
 ## API 文档
 
-详见 [DESIGN.md](DESIGN.md)，或启动后端后访问 http://localhost:8000/api/docs 查看 Swagger UI 文档。
+详见 [DESIGN.md](DESIGN.md)，或启动后端后访问 <http://localhost:8000/api/docs> 查看 Swagger UI 文档。
 
 ## 开发说明
 

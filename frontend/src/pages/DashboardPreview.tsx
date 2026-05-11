@@ -4,7 +4,6 @@ import { ArrowLeft, RefreshCw } from 'lucide-react';
 import { Button, message, Segmented } from 'antd';
 import GridLayout from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
-import 'react-resizable/css/styles.css';
 import { dashboardApi } from '../services/api';
 import { ChartRenderer } from '../components/charts';
 import { useDashboardStore } from '../stores/dashboardStore';

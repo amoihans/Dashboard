@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { LayoutGrid, Trash2, Eye, Save, Send, Bot, Edit } from 'lucide-react';
 import GridLayout from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
-import 'react-resizable/css/styles.css';
 import { Button, message, Segmented, Input } from 'antd';
 
 import { useDashboardStore } from '../stores/dashboardStore';
